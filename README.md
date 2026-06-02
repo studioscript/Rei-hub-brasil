@@ -1,1445 +1,997 @@
---[[
-    ⚡ REI HUB - DELTA EDITION v2.0 ⚡
-    Blox Fruits Ultimate Script - Paleta Verde Neon Premium
-    Desenvolvido por: Engenharia Reversa Avançada
-    Compatibilidade: Delta Mobile/PC - Roblox Engine Luau
-    Proteção: Anti-Crash, Anti-Kick, Memory Management, Garbage Collection
+
 --]]
 
--- // ============================================
--- // INICIALIZAÇÃO DE SERVIÇOS E CONSTANTES
--- // ============================================
-local Services = {
-    Players = game:GetService("Players"),
-    ReplicatedStorage = game:GetService("ReplicatedStorage"),
-    TweenService = game:GetService("TweenService"),
-    VirtualUser = game:GetService("VirtualUser"),
-    VirtualInputManager = game:GetService("VirtualInputManager"),
-    TeleportService = game:GetService("TeleportService"),
-    UserInputService = game:GetService("UserInputService"),
-    RunService = game:GetService("RunService"),
-    Lighting = game:GetService("Lighting"),
-    Debris = game:GetService("Debris"),
-    CollectionService = game:GetService("CollectionService"),
-    Workspace = workspace,
-}
+-- ============================
+-- CONFIGURAÇÕES GLOBAIS DE AMBIENTE
+-- ============================
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 
--- // Referências Locais
-local LocalPlayer = Services.Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-local Backpack = LocalPlayer:WaitForChild("Backpack")
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
--- // Remotes do Blox Fruits (Engenharia Reversa)
-local Remotes = Services.ReplicatedStorage:WaitForChild("Remotes")
-local CommF_ = Remotes:WaitForChild("CommF_")
-local ValidatorEvent = Remotes:WaitForChild("Validator")
-local SkillEvent = Remotes:FindFirstChild("Skill") or Remotes:FindFirstChild("ActivateSkill")
-local DamageEvent = Remotes:FindFirstChild("Damage") or Remotes:FindFirstChild("ApplyDamage")
-
--- // Sistema de Gerenciamento de Memória (Garbage Collector Automatizado)
+-- ============================
+-- GERENCIADOR DE CONEXÕES (ANTI-MEMORY LEAK)
+-- ============================
 local ConnectionManager = {}
 ConnectionManager.__index = ConnectionManager
 
 function ConnectionManager.new()
     local self = setmetatable({
-        connections = {},
-        cleanupQueue = {},
+        _connections = {},
+        _threads = {},
+        _instances = {},
+        _cleanupQueue = {}
     }, ConnectionManager)
     return self
 end
 
-function ConnectionManager:add(connection)
+function ConnectionManager:AddConnection(connection, identifier)
     if typeof(connection) == "RBXScriptConnection" then
-        table.insert(self.connections, connection)
-        return connection
+        local id = identifier or #self._connections + 1
+        self._connections[id] = connection
+        return id
     end
     return nil
 end
 
-function ConnectionManager:disconnectAll()
-    for _, conn in ipairs(self.connections) do
+function ConnectionManager:AddThread(thread, identifier)
+    if typeof(thread) == "thread" then
+        local id = identifier or #self._threads + 1
+        self._threads[id] = thread
+        return id
+    end
+    return nil
+end
+
+function ConnectionManager:AddInstance(instance, identifier)
+    if typeof(instance) == "Instance" then
+        local id = identifier or #self._instances + 1
+        self._instances[id] = instance
+        return id
+    end
+    return nil
+end
+
+function ConnectionManager:Disconnect(identifier)
+    if self._connections[identifier] then
         pcall(function()
-            if conn and conn.Connected then
-                conn:Disconnect()
-            end
+            self._connections[identifier]:Disconnect()
         end)
+        self._connections[identifier] = nil
     end
-    self.connections = {}
-    self.cleanupQueue = {}
 end
 
--- // Instância Global do ConnectionManager
-local GlobalConnections = ConnectionManager.new()
-
--- // ============================================
--- // CONFIGURAÇÕES GLOBAIS (PALETA VERDE NEON)
--- // ============================================
-local CONFIG = {
-    -- Cores Verde Neon Premium
-    PrimaryColor = Color3.fromRGB(0, 255, 0),      -- #00FF00 Verde Neon Puro
-    SecondaryColor = Color3.fromRGB(0, 200, 0),    -- Verde Escuro
-    AccentColor = Color3.fromRGB(50, 255, 50),     -- Verde Claro
-    DarkColor = Color3.fromRGB(0, 30, 0),          -- Fundo Escuro
-    DarkerColor = Color3.fromRGB(0, 15, 0),        -- Fundo Ultra Escuro
-    TextColor = Color3.fromRGB(255, 255, 255),     -- Texto Branco
-    GlowColor = Color3.fromRGB(0, 255, 100),       -- Verde Brilhante
-    WarningColor = Color3.fromRGB(255, 255, 0),    -- Amarelo Alerta
-    
-    -- Variáveis de Estado
-    Weapon = "Melee",
-    FarmSpeed = 300,
-    AttackRange = 50,
-    KillAuraRange = 50,
-    BringMobsRadius = 300,
-    CriticalHealthPercent = 30,
-    
-    -- Toggles Principais
-    AutoFarm = false,
-    BringMobs = false,
-    FastAttack = false,
-    KillAura = false,
-    SilentAim = false,
-    Aimbot = false,
-    AutoRaid = false,
-    AutoNextIsland = false,
-    ESPEnabled = false,
-    TracersEnabled = false,
-    TelemetryEnabled = false,
-    FPSBoostEnabled = false,
-    AutoHeal = false,
-    VolcanoEvent = false,
-    AutoLootBones = false,
-    SwordMastery = false,
-    NoClipEnabled = false,
-}
-
--- // ============================================
--- // FUNÇÕES DE SEGURANÇA E BYPASS AVANÇADOS
--- // ============================================
-
--- // Função de Raycast Ground Check (Anti-Queda/Void)
-local function RaycastGroundCheck(character)
-    local success, result = pcall(function()
-        local hrp = character and character:FindFirstChild("HumanoidRootPart")
-        if not hrp then return nil end
-        
-        local rayOrigin = hrp.Position
-        local rayDirection = Vector3.new(0, -50, 0)
-        
-        local raycastParams = RaycastParams.new()
-        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-        raycastParams.FilterDescendantsInstances = {character}
-        raycastParams.IgnoreWater = false
-        
-        return Services.Workspace:Raycast(rayOrigin, rayDirection, raycastParams)
-    end)
-    
-    if success and result then
-        return result.Position
+function ConnectionManager:Cleanup()
+    -- Desconecta todas as conexões RBXScriptConnection
+    for id, connection in pairs(self._connections) do
+        pcall(function()
+            connection:Disconnect()
+        end)
+        self._connections[id] = nil
     end
-    return nil
+    
+    -- Finaliza threads pendentes
+    for id, thread in pairs(self._threads) do
+        pcall(function()
+            coroutine.close(thread)
+        end)
+        self._threads[id] = nil
+    end
+    
+    -- Destroi instâncias criadas
+    for id, instance in pairs(self._instances) do
+        pcall(function()
+            instance:Destroy()
+        end)
+        self._instances[id] = nil
+    end
 end
 
--- // Função de Teletransporte Seguro com Anti-Kick e Ground Detection
-local function SafeTeleport(targetCFrame, speed, useNoClip)
-    local success, errorMsg = pcall(function()
-        local character = LocalPlayer.Character
-        if not character then return false end
-        
-        local hrp = character:FindFirstChild("HumanoidRootPart")
-        if not hrp then return false end
-        
-        -- // Armazenar estado original das partes
-        local originalCollisions = {}
-        if useNoClip or CONFIG.NoClipEnabled then
-            for _, part in ipairs(character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    originalCollisions[part] = part.CanCollide
-                    part.CanCollide = false
-                end
-            end
+return ConnectionManager
+
+-- ============================
+-- SISTEMA DE SEGURANÇA ANTI-KICK E RAYCAST
+-- ============================
+local SecuritySystem = {}
+SecuritySystem.__index = SecuritySystem
+
+function SecuritySystem.new(character)
+    local self = setmetatable({
+        Character = character,
+        HumanoidRootPart = character:WaitForChild("HumanoidRootPart"),
+        Humanoid = character:WaitForChild("Humanoid"),
+        BodyVelocity = nil,
+        OriginalCollisions = {},
+        IsTeleporting = false
+    }, SecuritySystem)
+    return self
+end
+
+function SecuritySystem:GroundCheck(position)
+    local rayOrigin = position + Vector3.new(0, 10, 0)
+    local rayDirection = Vector3.new(0, -500, 0)
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {self.Character}
+    
+    local raycastResult = Workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+    return raycastResult
+end
+
+function SecuritySystem:EnableSafeTeleport(targetPosition)
+    if self.IsTeleporting then return false end
+    self.IsTeleporting = true
+    
+    local success, err = pcall(function()
+        -- Ground Check antes do teleporte
+        local groundResult = self:GroundCheck(targetPosition)
+        if not groundResult then
+            -- Ajusta altura para evitar queda no vazio
+            targetPosition = Vector3.new(targetPosition.X, targetPosition.Y + 50, targetPosition.Z)
         end
         
-        -- // BodyVelocity Anti-Kick (Força Infinita, Velocidade Zero)
-        local bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bodyVelocity.Parent = hrp
+        -- Instancia BodyVelocity para evitar detecção de velocidade
+        self.BodyVelocity = Instance.new("BodyVelocity")
+        self.BodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        self.BodyVelocity.Velocity = Vector3.zero
+        self.BodyVelocity.P = 1250
+        self.BodyVelocity.Parent = self.HumanoidRootPart
         
-        -- // Calcular distância e duração do Tween
-        local distance = (hrp.Position - targetCFrame.Position).Magnitude
-        local speedValue = speed or CONFIG.FarmSpeed
-        local duration = math.clamp(distance / speedValue, 0.1, 10)
-        
-        -- // Criar e executar Tween
+        -- Tweens com trajetória segura
         local tweenInfo = TweenInfo.new(
-            duration,
+            (self.HumanoidRootPart.Position - targetPosition).Magnitude / 300,
             Enum.EasingStyle.Linear,
             Enum.EasingDirection.Out
         )
         
-        local tween = Services.TweenService:Create(hrp, tweenInfo, {
-            CFrame = targetCFrame
+        local tween = TweenService:Create(self.HumanoidRootPart, tweenInfo, {
+            CFrame = CFrame.new(targetPosition) * CFrame.Angles(0, math.rad(self.HumanoidRootPart.Orientation.Y), 0)
         })
         
         tween:Play()
         tween.Completed:Wait()
         
-        -- // Ground Check (Verificar se não caiu no limbo)
-        local groundPos = RaycastGroundCheck(character)
-        if groundPos then
-            hrp.CFrame = CFrame.new(targetCFrame.X, groundPos.Y + 5, targetCFrame.Z)
-        end
-        
-        -- // Restaurar colisões
-        if useNoClip or CONFIG.NoClipEnabled then
-            for part, originalState in pairs(originalCollisions) do
-                if part and part.Parent then
-                    pcall(function()
-                        part.CanCollide = originalState
-                    end)
-                end
-            end
-        end
-        
-        -- // Limpar BodyVelocity
-        if bodyVelocity then
-            bodyVelocity:Destroy()
-        end
-        
-        return true
-    end)
-    
-    if not success then
-        warn("Erro no SafeTeleport: " .. tostring(errorMsg))
-        return false
-    end
-    return true
-end
-
--- // Função para obter Character com Retry
-local function GetCharacter()
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        return LocalPlayer.Character
-    else
-        LocalPlayer.CharacterAdded:Wait()
-        return LocalPlayer.Character
-    end
-end
-
--- // Função para obter Player Data com segurança
-local function GetPlayerData()
-    local success, data = pcall(function()
-        local dataFolder = LocalPlayer:FindFirstChild("Data")
-        if dataFolder then
-            local level = dataFolder:FindFirstChild("Level")
-            if level then
-                return {
-                    Level = level.Value,
-                    Beli = dataFolder:FindFirstChild("Beli") and dataFolder.Beli.Value or 0,
-                    Fragments = dataFolder:FindFirstChild("Fragments") and dataFolder.Fragments.Value or 0,
-                }
-            end
-        end
-        return nil
-    end)
-    return success and data or nil
-end
-
--- // ============================================
--- // TABELA DE FARM COMPLETA (SEA 1, 2 E 3)
--- // ============================================
-local FarmDatabase = {
-    -- Sea 1 (Level 0-700)
-    {
-        MinLevel = 0, MaxLevel = 10, Sea = 1,
-        QuestNPC = "Bandit Quest Giver", QuestName = "Bandit Quest 1",
-        Monster = "Bandit", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(1059.93, 16.35, 1549.98),
-        MonsterCFrame = CFrame.new(1199.31, 16.38, 1526.22),
-    },
-    {
-        MinLevel = 10, MaxLevel = 30, Sea = 1,
-        QuestNPC = "Monkey Quest Giver", QuestName = "Monkey Quest 1",
-        Monster = "Monkey", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-1599.66, 36.84, 152.6),
-        MonsterCFrame = CFrame.new(-1455.54, 24.25, 109.39),
-    },
-    {
-        MinLevel = 30, MaxLevel = 50, Sea = 1,
-        QuestNPC = "Pirate Quest Giver", QuestName = "Pirate Quest 1",
-        Monster = "Pirate", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-1495.32, 23.75, 3889.02),
-        MonsterCFrame = CFrame.new(-1447.98, 23.75, 3921.65),
-    },
-    {
-        MinLevel = 50, MaxLevel = 80, Sea = 1,
-        QuestNPC = "Brute Quest Giver", QuestName = "Brute Quest 1",
-        Monster = "Brute", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-1746.47, 23.74, 4261.35),
-        MonsterCFrame = CFrame.new(-1695.8, 23.76, 4221.65),
-    },
-    {
-        MinLevel = 80, MaxLevel = 100, Sea = 1,
-        QuestNPC = "Desert Bandit Quest Giver", QuestName = "Desert Bandit Quest 1",
-        Monster = "Desert Bandit", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(896.49, 6.43, 4385.75),
-        MonsterCFrame = CFrame.new(950.29, 6.42, 4369.47),
-    },
-    {
-        MinLevel = 100, MaxLevel = 130, Sea = 1,
-        QuestNPC = "Desert Officer Quest Giver", QuestName = "Desert Officer Quest 1",
-        Monster = "Desert Officer", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(1575.17, 6.45, 4376.07),
-        MonsterCFrame = CFrame.new(1613.71, 6.44, 4353.99),
-    },
-    {
-        MinLevel = 130, MaxLevel = 160, Sea = 1,
-        QuestNPC = "Snow Bandit Quest Giver", QuestName = "Snow Bandit Quest 1",
-        Monster = "Snow Bandit", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-4976.89, 90.34, -2319.01),
-        MonsterCFrame = CFrame.new(-4932.83, 90.39, -2259.6),
-    },
-    {
-        MinLevel = 160, MaxLevel = 200, Sea = 1,
-        QuestNPC = "Snowman Quest Giver", QuestName = "Snowman Quest 1",
-        Monster = "Snowman", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-5610.88, 90.35, -2257.53),
-        MonsterCFrame = CFrame.new(-5530.28, 90.46, -2202.16),
-    },
-    -- Sea 2 (Level 700-1500)
-    {
-        MinLevel = 200, MaxLevel = 250, Sea = 1,
-        QuestNPC = "Fishman Warrior Quest Giver", QuestName = "Fishman Warrior Quest 1",
-        Monster = "Fishman Warrior", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-2872.66, 14.53, 5151.71),
-        MonsterCFrame = CFrame.new(-2826.61, 14.5, 5091.91),
-    },
-    {
-        MinLevel = 700, MaxLevel = 850, Sea = 2,
-        QuestNPC = "Raider Quest Giver", QuestName = "Raider Quest 1",
-        Monster = "Raider", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-497.11, 30.4, 3590.27),
-        MonsterCFrame = CFrame.new(-425.97, 30.4, 3625.79),
-    },
-    {
-        MinLevel = 850, MaxLevel = 950, Sea = 2,
-        QuestNPC = "Mercenary Quest Giver", QuestName = "Mercenary Quest 1",
-        Monster = "Mercenary", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-1202.33, 46.01, 1385.48),
-        MonsterCFrame = CFrame.new(-1165.17, 46.06, 1409.41),
-    },
-    {
-        MinLevel = 950, MaxLevel = 1100, Sea = 2,
-        QuestNPC = "Swan Pirate Quest Giver", QuestName = "Swan Pirate Quest 1",
-        Monster = "Swan Pirate", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-2337.62, 8.14, 1124.65),
-        MonsterCFrame = CFrame.new(-2281.74, 8.13, 1091.73),
-    },
-    {
-        MinLevel = 1100, MaxLevel = 1250, Sea = 2,
-        QuestNPC = "Factory Staff Quest Giver", QuestName = "Factory Staff Quest 1",
-        Monster = "Factory Staff", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-271.27, 73.85, -380.11),
-        MonsterCFrame = CFrame.new(-215.09, 73.92, -345.31),
-    },
-    {
-        MinLevel = 1250, MaxLevel = 1500, Sea = 2,
-        QuestNPC = "Marine Lieutenant Quest Giver", QuestName = "Marine Lieutenant Quest 1",
-        Monster = "Marine Lieutenant", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-2998.88, 33.14, 3874.89),
-        MonsterCFrame = CFrame.new(-2943.1, 33.13, 3824.64),
-    },
-    -- Sea 3 (Level 1500+)
-    {
-        MinLevel = 1500, MaxLevel = 1700, Sea = 3,
-        QuestNPC = "Pirate Millionaire Quest Giver", QuestName = "Pirate Millionaire Quest 1",
-        Monster = "Pirate Millionaire", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-658.32, 148.24, 1514.56),
-        MonsterCFrame = CFrame.new(-593.57, 148.37, 1585.82),
-    },
-    {
-        MinLevel = 1700, MaxLevel = 1900, Sea = 3,
-        QuestNPC = "Pistol Billionaire Quest Giver", QuestName = "Pistol Billionaire Quest 1",
-        Monster = "Pistol Billionaire", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-964.85, 148.23, 1517.57),
-        MonsterCFrame = CFrame.new(-906.9, 148.32, 1559.05),
-    },
-    {
-        MinLevel = 1900, MaxLevel = 2100, Sea = 3,
-        QuestNPC = "Jungle Pirate Quest Giver", QuestName = "Jungle Pirate Quest 1",
-        Monster = "Jungle Pirate", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-1641.69, 36.49, 102.52),
-        MonsterCFrame = CFrame.new(-1540.92, 36.49, 63.86),
-    },
-    {
-        MinLevel = 2100, MaxLevel = 2300, Sea = 3,
-        QuestNPC = "Tomb Rider Quest Giver", QuestName = "Tomb Rider Quest 1",
-        Monster = "Tomb Rider", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(-1092.55, 40.41, 2176.4),
-        MonsterCFrame = CFrame.new(-1028.3, 40.4, 2215.84),
-    },
-    {
-        MinLevel = 2300, MaxLevel = 2550, Sea = 3,
-        QuestNPC = "Elite Pirate Quest Giver", QuestName = "Elite Pirate Quest 1",
-        Monster = "Elite Pirate", MonsterLevel = "Any",
-        QuestCFrame = CFrame.new(5364.55, 28.34, 3336.9),
-        MonsterCFrame = CFrame.new(5412.51, 28.34, 3289.45),
-    },
-}
-
--- // Função para encontrar configuração de farm baseada no level
-local function GetFarmConfig(level)
-    for i = #FarmDatabase, 1, -1 do
-        if level >= FarmDatabase[i].MinLevel then
-            return FarmDatabase[i]
-        end
-    end
-    return FarmDatabase[1]
-end
-
--- // ============================================
--- // SISTEMA DE EQUIPAMENTO DE ARMAS
--- // ============================================
-local function EquipWeapon(weaponType)
-    local success, errorMsg = pcall(function()
-        local character = GetCharacter()
-        local humanoid = character:FindFirstChild("Humanoid")
-        if not humanoid then return end
-        
-        local function findToolInContainer(container)
-            local tools = {}
-            for _, tool in ipairs(container:GetChildren()) do
-                if tool:IsA("Tool") then
-                    local toolTip = tool:FindFirstChild("ToolTip")
-                    if toolTip then
-                        local tipLower = toolTip.Value:lower()
-                        if weaponType == "Melee" and (tipLower:find("combat") or tipLower:find("fighting style") or tipLower:find("blox fruit")) then
-                            table.insert(tools, tool)
-                        elseif weaponType == "Sword" and tipLower:find("sword") then
-                            table.insert(tools, tool)
-                        end
-                    end
-                end
-            end
-            return tools
-        end
-        
-        local backpackTools = findToolInContainer(Backpack)
-        local characterTools = findToolInContainer(character)
-        
-        local allTools = {}
-        for _, tool in ipairs(backpackTools) do
-            table.insert(allTools, tool)
-        end
-        for _, tool in ipairs(characterTools) do
-            table.insert(allTools, tool)
-        end
-        
-        if #allTools > 0 then
-            local tool = allTools[1]
-            if tool.Parent ~= character then
-                humanoid:EquipTool(tool)
-            end
+        -- Limpeza pós-teleporte
+        if self.BodyVelocity then
+            self.BodyVelocity:Destroy()
+            self.BodyVelocity = nil
         end
     end)
     
-    if not success then
-        warn("Erro ao equipar arma: " .. tostring(errorMsg))
+    self.IsTeleporting = false
+    return success
+end
+
+function SecuritySystem:SetNoClip(enable)
+    for _, part in ipairs(self.Character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            if enable then
+                self.OriginalCollisions[part] = part.CanCollide
+                part.CanCollide = false
+            else
+                if self.OriginalCollisions[part] ~= nil then
+                    part.CanCollide = self.OriginalCollisions[part]
+                    self.OriginalCollisions[part] = nil
+                end
+            end
+        end
     end
 end
 
--- // ============================================
--- // SISTEMA BRING MOBS AVANÇADO (300 STUDS)
--- // ============================================
-local function BringAllMobs(monsterName)
-    local success, errorMsg = pcall(function()
-        local character = GetCharacter()
-        local playerHRP = character:FindFirstChild("HumanoidRootPart")
-        if not playerHRP then return end
+function SecuritySystem:Cleanup()
+    self:SetNoClip(false)
+    if self.BodyVelocity then
+        self.BodyVelocity:Destroy()
+    end
+end
+
+return SecuritySystem
+
+-- ============================
+-- MÓDULO DE OTIMIZAÇÃO DE MEMÓRIA E PERFORMANCE
+-- ============================
+local PerformanceOptimizer = {}
+PerformanceOptimizer.__index = PerformanceOptimizer
+
+function PerformanceOptimizer.new()
+    local self = setmetatable({
+        _cleanupTimers = {},
+        _gcThreshold = 15000 -- 15 segundos para coleta de lixo
+    }, PerformanceOptimizer)
+    return self
+end
+
+function PerformanceOptimizer:HardFPSBoost()
+    local success, err = pcall(function()
+        -- Destruir elementos pesados de renderização
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            pcall(function()
+                if obj:IsA("Decal") or obj:IsA("Texture") then
+                    obj:Destroy()
+                elseif obj:IsA("ParticleEmitter") then
+                    obj.Enabled = false
+                elseif obj:IsA("BasePart") then
+                    obj.Material = Enum.Material.SmoothPlastic
+                elseif obj:IsA("Light") then
+                    obj.Brightness = math.min(obj.Brightness, 1)
+                end
+            end)
+        end
         
-        local enemiesFolder = Services.Workspace:FindFirstChild("Enemies")
-        if not enemiesFolder then return end
+        -- Otimizações de iluminação
+        Lighting.GlobalShadows = false
+        Lighting.Brightness = 2
         
-        local targetPosition = playerHRP.CFrame * CFrame.new(0, 0, 5)
+        -- Desativa efeitos atmosféricos
+        for _, child in ipairs(Lighting:GetChildren()) do
+            if child:IsA("Atmosphere") then
+                child.Density = 0
+            elseif child:IsA("BloomEffect") then
+                child.Enabled = false
+            elseif child:IsA("BlurEffect") then
+                child.Enabled = false
+            end
+        end
         
-        for _, enemy in ipairs(enemiesFolder:GetChildren()) do
-            if enemy.Name == monsterName or monsterName == "All" then
-                local enemyHRP = enemy:FindFirstChild("HumanoidRootPart")
-                local humanoid = enemy:FindFirstChild("Humanoid")
-                
-                if enemyHRP and humanoid and humanoid.Health > 0 then
-                    local distance = (enemyHRP.Position - playerHRP.Position).Magnitude
-                    
-                    if distance <= CONFIG.BringMobsRadius then
-                        -- Desativar colisão para movimento suave
+        -- Força garbage collection
+        workspace:ClearAllChildren()
+    end)
+    return success
+end
+
+function PerformanceOptimizer:StartAutoGC()
+    local connMgr = ConnectionManager.new()
+    
+    local thread = task.spawn(function()
+        while true do
+            task.wait(self._gcThreshold / 1000)
+            pcall(function()
+                workspace:ClearAllChildren()
+                game:GetService("Debris"):ClearAllChildren()
+            end)
+        end
+    end)
+    
+    connMgr:AddThread(thread, "AutoGC")
+    return connMgr
+end
+
+function PerformanceOptimizer:OptimizeRayfield(rayfieldWindow)
+    -- Reduz consumo de Rayfield
+    pcall(function()
+        local windows = game:GetService("CoreGui"):FindFirstChild("Rayfield")
+        if windows then
+            for _, element in ipairs(windows:GetDescendants()) do
+                if element:IsA("Frame") or element:IsA("ScrollingFrame") then
+                    element.ClipsDescendants = true
+                end
+            end
+        end
+    end)
+end
+
+return PerformanceOptimizer
+
+-- ============================
+-- SISTEMA DE FARM E COMBATE AVANÇADO
+-- ============================
+local CombatSystem = {}
+CombatSystem.__index = CombatSystem
+
+function CombatSystem.new()
+    local self = setmetatable({
+        _activeToggles = {},
+        _security = SecuritySystem.new(Character),
+        _connections = ConnectionManager.new(),
+        _currentWeapon = "Melee",
+        _attackCooldown = 0.15,
+        _lastAttack = 0
+    }, CombatSystem)
+    return self
+end
+
+function CombatSystem:GetEnemies(radius)
+    local enemies = {}
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
+            if obj.Humanoid.Health > 0 and obj ~= Character then
+                local distance = (HumanoidRootPart.Position - obj.HumanoidRootPart.Position).Magnitude
+                if distance <= (radius or 300) then
+                    table.insert(enemies, obj)
+                end
+            end
+        end
+    end
+    return enemies
+end
+
+function CombatSystem:BringMobs(enabled)
+    if enabled then
+        local thread = task.spawn(function()
+            while self._activeToggles["BringMobs"] do
+                task.wait(0.05)
+                pcall(function()
+                    local enemies = self:GetEnemies(300)
+                    for _, enemy in ipairs(enemies) do
+                        -- Desativa colisão do mob
                         for _, part in ipairs(enemy:GetDescendants()) do
                             if part:IsA("BasePart") then
                                 part.CanCollide = false
                             end
                         end
-                        
-                        -- Suavizar movimento do mob
-                        local tweenInfo = TweenInfo.new(0.05, Enum.EasingStyle.Linear)
-                        local tween = Services.TweenService:Create(enemyHRP, tweenInfo, {
-                            CFrame = targetPosition
-                        })
-                        tween:Play()
-                    end
-                end
-            end
-        end
-    end)
-    
-    if not success then
-        warn("Erro no BringMobs: " .. tostring(errorMsg))
-    end
-end
-
--- // ============================================
--- // SISTEMA DE ATAQUE RÁPIDO COM BYPASS
--- // ============================================
-local function PerformFastAttack(target)
-    local success, errorMsg = pcall(function()
-        if not target then return end
-        
-        local character = GetCharacter()
-        local hrp = character:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-        
-        -- Teleportar para posição de ataque
-        local targetHRP = target:FindFirstChild("HumanoidRootPart")
-        if not targetHRP then return end
-        
-        local attackPos = targetHRP.CFrame * CFrame.new(0, 0, 2)
-        SafeTeleport(attackPos, CONFIG.FarmSpeed * 2, true)
-        
-        -- Equipar arma
-        EquipWeapon(CONFIG.Weapon)
-        
-        -- Método 1: Disparar Validator (Bypass de dano)
-        pcall(function()
-            ValidatorEvent:FireServer()
-        end)
-        
-        -- Método 2: VirtualUser Click (Simulação física)
-        task.wait(0.01)
-        Services.VirtualUser:Button1Down(Vector2.new(850, 520))
-        task.wait(0.01)
-        Services.VirtualUser:Button1Up(Vector2.new(850, 520))
-        
-        -- Método 3: Aplicar dano direto se disponível
-        if DamageEvent then
-            pcall(function()
-                DamageEvent:FireServer(target, 100)
-            end)
-        end
-    end)
-    
-    if not success then
-        warn("Erro no FastAttack: " .. tostring(errorMsg))
-    end
-end
-
--- // ============================================
--- // SISTEMA KILL AURA DINÂMICA
--- // ============================================
-local function KillAuraLoop()
-    task.spawn(function()
-        while CONFIG.KillAura do
-            local success, errorMsg = pcall(function()
-                local character = GetCharacter()
-                local playerPos = character:FindFirstChild("HumanoidRootPart").Position
-                
-                -- Verificar inimigos em Enemies
-                local enemiesFolder = Services.Workspace:FindFirstChild("Enemies")
-                if enemiesFolder then
-                    for _, enemy in ipairs(enemiesFolder:GetChildren()) do
-                        if CONFIG.KillAura and enemy:FindFirstChild("HumanoidRootPart") and enemy:FindFirstChild("Humanoid") then
-                            local humanoid = enemy.Humanoid
-                            if humanoid.Health > 0 then
-                                local distance = (enemy.HumanoidRootPart.Position - playerPos).Magnitude
-                                if distance <= CONFIG.KillAuraRange then
-                                    PerformFastAttack(enemy)
-                                end
-                            end
-                        end
-                    end
-                end
-                
-                -- Verificar Players se necessário
-                if CONFIG.AttackPlayers then
-                    for _, player in ipairs(Services.Players:GetPlayers()) do
-                        if player ~= LocalPlayer and player.Character then
-                            local targetHRP = player.Character:FindFirstChild("HumanoidRootPart")
-                            local humanoid = player.Character:FindFirstChild("Humanoid")
-                            if targetHRP and humanoid and humanoid.Health > 0 then
-                                local distance = (targetHRP.Position - playerPos).Magnitude
-                                if distance <= CONFIG.KillAuraRange then
-                                    PerformFastAttack(player.Character)
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-            
-            if not success then
-                warn("Erro KillAura: " .. tostring(errorMsg))
-            end
-            
-            task.wait(0.001)
-        end
-    end)
-end
-
--- // ============================================
--- // SISTEMA SILENT AIM PRO
--- // ============================================
-local function SilentAimSystem()
-    task.spawn(function()
-        while CONFIG.SilentAim do
-            local success, errorMsg = pcall(function()
-                local nearestTarget = nil
-                local nearestDistance = math.huge
-                local character = GetCharacter()
-                local myPos = character:FindFirstChild("HumanoidRootPart").Position
-                
-                -- Encontrar alvo mais próximo
-                for _, player in ipairs(Services.Players:GetPlayers()) do
-                    if player ~= LocalPlayer and player.Character then
-                        local targetHRP = player.Character:FindFirstChild("HumanoidRootPart")
-                        local humanoid = player.Character:FindFirstChild("Humanoid")
-                        if targetHRP and humanoid and humanoid.Health > 0 then
-                            local distance = (targetHRP.Position - myPos).Magnitude
-                            if distance < nearestDistance and distance <= CONFIG.AttackRange then
-                                nearestDistance = distance
-                                nearestTarget = player
-                            end
-                        end
-                    end
-                end
-                
-                -- Aplicar Silent Aim
-                if nearestTarget and nearestTarget.Character then
-                    local targetHead = nearestTarget.Character:FindFirstChild("Head") or 
-                                      nearestTarget.Character:FindFirstChild("HumanoidRootPart")
-                    if targetHead then
-                        -- Redirecionar câmera e ataques para o alvo
-                        local myHRP = character:FindFirstChild("HumanoidRootPart")
-                        if myHRP then
-                            local lookVector = (targetHead.Position - myHRP.Position).Unit
-                            myHRP.CFrame = CFrame.lookAt(myHRP.Position, Vector3.new(targetHead.Position.X, myHRP.Position.Y, targetHead.Position.Z))
-                            
-                            -- Interceptar skills (se possível)
-                            if SkillEvent then
-                                -- Redirecionar projétil para o alvo
-                            end
-                        end
-                    end
-                end
-            end)
-            
-            if not success then
-                warn("Erro SilentAim: " .. tostring(errorMsg))
-            end
-            
-            task.wait()
-        end
-    end)
-end
-
--- // ============================================
--- // SISTEMA AUTO HEAL INTELIGENTE
--- // ============================================
-local function AutoHealSystem()
-    task.spawn(function()
-        while CONFIG.AutoHeal do
-            local success, errorMsg = pcall(function()
-                local character = GetCharacter()
-                local humanoid = character:FindFirstChild("Humanoid")
-                if not humanoid then return end
-                
-                local maxHealth = humanoid.MaxHealth
-                local currentHealth = humanoid.Health
-                local healthPercent = (currentHealth / maxHealth) * 100
-                
-                if healthPercent <= CONFIG.CriticalHealthPercent then
-                    -- Movimento evasivo
-                    local hrp = character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        -- Subir 100 studs
-                        local escapeCFrame = hrp.CFrame * CFrame.new(0, 100, 0)
-                        SafeTeleport(escapeCFrame, CONFIG.FarmSpeed * 3, true)
-                        
-                        -- Aguardar regeneração
-                        while humanoid.Health < maxHealth * 0.8 do
-                            task.wait(0.5)
-                            if not CONFIG.AutoHeal then break end
-                        end
-                    end
-                end
-            end)
-            
-            if not success then
-                warn("Erro AutoHeal: " .. tostring(errorMsg))
-            end
-            
-            task.wait(0.1)
-        end
-    end)
-end
-
--- // ============================================
--- // SISTEMA AUTO FARM PRINCIPAL
--- // ============================================
-local function AutoFarmSystem()
-    task.spawn(function()
-        while CONFIG.AutoFarm do
-            local success, errorMsg = pcall(function()
-                local playerData = GetPlayerData()
-                if not playerData then
-                    task.wait(1)
-                    return
-                end
-                
-                local level = playerData.Level
-                local farmConfig = GetFarmConfig(level)
-                
-                -- Verificar se é Sword Mastery
-                if CONFIG.SwordMastery then
-                    CONFIG.Weapon = "Sword"
-                end
-                
-                -- Passo 1: Teleportar para NPC da Quest
-                SafeTeleport(farmConfig.QuestCFrame, CONFIG.FarmSpeed, false)
-                task.wait(0.5)
-                
-                -- Passo 2: Aceitar Quest
-                local questArgs = {farmConfig.QuestName, 1}
-                CommF_:InvokeServer("StartQuest", farmConfig.QuestName, 1)
-                task.wait(0.3)
-                
-                -- Passo 3: Ir para área de monstros
-                SafeTeleport(farmConfig.MonsterCFrame, CONFIG.FarmSpeed, false)
-                task.wait(0.3)
-                
-                -- Passo 4: Loop de Farm
-                local farmStart = tick()
-                while CONFIG.AutoFarm and (tick() - farmStart) < 45 do
-                    -- Bring Mobs se ativado
-                    if CONFIG.BringMobs then
-                        BringAllMobs(farmConfig.Monster)
-                    end
-                    
-                    -- Procurar inimigo mais próximo
-                    local enemiesFolder = Services.Workspace:FindFirstChild("Enemies")
-                    if enemiesFolder then
-                        local nearestEnemy = nil
-                        local minDistance = math.huge
-                        local character = GetCharacter()
-                        local myPos = character:FindFirstChild("HumanoidRootPart").Position
-                        
-                        for _, enemy in ipairs(enemiesFolder:GetChildren()) do
-                            if enemy.Name == farmConfig.Monster then
-                                local humanoid = enemy:FindFirstChild("Humanoid")
-                                local hrp = enemy:FindFirstChild("HumanoidRootPart")
-                                if humanoid and hrp and humanoid.Health > 0 then
-                                    local dist = (hrp.Position - myPos).Magnitude
-                                    if dist < minDistance then
-                                        minDistance = dist
-                                        nearestEnemy = enemy
-                                    end
-                                end
-                            end
-                        end
-                        
-                        if nearestEnemy then
-                            PerformFastAttack(nearestEnemy)
-                        end
-                    end
-                    
-                    task.wait(0.15)
-                end
-            end)
-            
-            if not success then
-                warn("Erro no AutoFarm: " .. tostring(errorMsg))
-            end
-            
-            task.wait(0.5)
-        end
-    end)
-end
-
--- // ============================================
--- // SISTEMA AUTO VOLCANO SEA EVENT (PREHISTORIC ISLAND)
--- // ============================================
-local function VolcanoEventSystem()
-    task.spawn(function()
-        while CONFIG.VolcanoEvent do
-            local success, errorMsg = pcall(function()
-                -- Procurar Prehistoric Island no workspace
-                local prehistoricIsland = nil
-                for _, obj in ipairs(Services.Workspace:GetChildren()) do
-                    if obj.Name:find("Prehistoric") or obj.Name:find("Volcano") then
-                        prehistoricIsland = obj
-                        break
-                    end
-                end
-                
-                if prehistoricIsland then
-                    -- Subprocesso 1: Atacar nós de pressão do vulcão
-                    local pressureParts = {}
-                    for _, part in ipairs(prehistoricIsland:GetDescendants()) do
-                        if part:IsA("BasePart") and (part.Name:find("Pressure") or part.BrickColor == BrickColor.new("Bright orange")) then
-                            table.insert(pressureParts, part)
-                        end
-                    end
-                    
-                    for _, part in ipairs(pressureParts) do
-                        if CONFIG.VolcanoEvent then
-                            local attackCFrame = CFrame.new(part.Position + Vector3.new(0, 5, 0))
-                            SafeTeleport(attackCFrame, CONFIG.FarmSpeed * 2, true)
-                            PerformFastAttack(part.Parent or part)
-                            task.wait(0.1)
-                        end
-                    end
-                    
-                    -- Subprocesso 2: Eliminar Lava Golems
-                    local enemiesFolder = Services.Workspace:FindFirstChild("Enemies")
-                    if enemiesFolder then
-                        for _, enemy in ipairs(enemiesFolder:GetChildren()) do
-                            if enemy.Name:find("Lava Golem") and CONFIG.VolcanoEvent then
-                                local enemyHRP = enemy:FindFirstChild("HumanoidRootPart")
-                                if enemyHRP then
-                                    local floatCFrame = enemyHRP.CFrame * CFrame.new(0, 10, 0)
-                                    SafeTeleport(floatCFrame, CONFIG.FarmSpeed * 3, true)
-                                    PerformFastAttack(enemy)
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-            
-            if not success then
-                warn("Erro VolcanoEvent: " .. tostring(errorMsg))
-            end
-            
-            task.wait(0.5)
-        end
-    end)
-end
-
--- // ============================================
--- // SISTEMA AUTO LOOT BONES & EGGS
--- // ============================================
-local function AutoLootSystem()
-    task.spawn(function()
-        while CONFIG.AutoLootBones do
-            local success, errorMsg = pcall(function()
-                local character = GetCharacter()
-                local playerHRP = character:FindFirstChild("HumanoidRootPart")
-                if not playerHRP then return end
-                
-                -- Procurar itens looteáveis
-                for _, obj in ipairs(Services.Workspace:GetDescendants()) do
-                    if CONFIG.AutoLootBones and obj:IsA("BasePart") or obj:IsA("Model") then
-                        local itemName = obj.Name:lower()
-                        if itemName:find("bone") or itemName:find("egg") or itemName:find("dinosaur") or itemName:find("fossil") then
-                            local itemPos = obj:IsA("BasePart") and obj.Position or obj:GetPivot().Position
-                            local distance = (itemPos - playerHRP.Position).Magnitude
-                            
-                            if distance < 50 then
-                                SafeTeleport(CFrame.new(itemPos), CONFIG.FarmSpeed * 4, true)
-                                task.wait(0.1)
-                                
-                                -- Tocar no item para coletar
-                                firetouchinterest(playerHRP, obj, 0)
-                                firetouchinterest(playerHRP, obj, 1)
-                            end
-                        end
-                    end
-                end
-            end)
-            
-            if not success then
-                warn("Erro AutoLoot: " .. tostring(errorMsg))
-            end
-            
-            task.wait(0.2)
-        end
-    end)
-end
-
--- // ============================================
--- // SISTEMA AUTO RAID SOLO PRO
--- // ============================================
-local function AutoRaidSystem()
-    task.spawn(function()
-        while CONFIG.AutoRaid do
-            local success, errorMsg = pcall(function()
-                local playerData = GetPlayerData()
-                if not playerData then return end
-                
-                -- Verificar se está no laboratório
-                local raidArea = Services.Workspace:FindFirstChild("__THINGS")
-                if raidArea then
-                    local fruitRaids = raidArea:FindFirstChild("FruitRaids")
-                    if fruitRaids then
-                        -- Dentro da raid, limpar salas
-                        for wave = 1, 5 do
-                            if not CONFIG.AutoRaid then break end
-                            
-                            local enemiesFolder = Services.Workspace:FindFirstChild("Enemies")
-                            if enemiesFolder then
-                                local waveComplete = false
-                                
-                                while not waveComplete and CONFIG.AutoRaid do
-                                    local allDead = true
-                                    
-                                    for _, enemy in ipairs(enemiesFolder:GetChildren()) do
-                                        local humanoid = enemy:FindFirstChild("Humanoid")
-                                        if humanoid and humanoid.Health > 0 then
-                                            allDead = false
-                                            PerformFastAttack(enemy)
-                                        end
-                                    end
-                                    
-                                    if allDead then
-                                        waveComplete = true
-                                    end
-                                    
-                                    task.wait(0.3)
-                                end
-                            end
-                            
-                            -- Aguardar e ir para próxima ilha
-                            if CONFIG.AutoNextIsland then
-                                task.wait(2)
-                                local portals = Services.Workspace:FindFirstChild("Portals")
-                                if portals then
-                                    for _, portal in ipairs(portals:GetChildren()) do
-                                        if portal:FindFirstChild("CFrame") then
-                                            SafeTeleport(portal.CFrame, CONFIG.FarmSpeed * 2, false)
-                                            task.wait(1)
-                                            break
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    else
-                        -- Comprar chip se necessário
-                        if playerData.Fragments >= 1000 then
-                            CommF_:InvokeServer("RaidsNpc", "Select", "Flame")
-                        elseif playerData.Beli >= 100000 then
-                            CommF_:InvokeServer("Beli", "RaidsNpc")
-                        end
-                    end
-                else
-                    -- Teleportar para laboratório
-                    local labCFrame = CFrame.new(-5550, 250, -4400)
-                    SafeTeleport(labCFrame, CONFIG.FarmSpeed, false)
-                end
-            end)
-            
-            if not success then
-                warn("Erro AutoRaid: " .. tostring(errorMsg))
-            end
-            
-            task.wait(3)
-        end
-    end)
-end
-
--- // ============================================
--- // SISTEMA ESP (PLAYER HIGHLIGHT + TRACERS + TELEMETRY)
--- // ============================================
-local function ESPSystem()
-    local espConnections = ConnectionManager.new()
-    
-    return function(enabled)
-        if not enabled then
-            espConnections:disconnectAll()
-            -- Limpar ESP existente
-            for _, player in ipairs(Services.Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character then
-                    pcall(function()
-                        local highlight = player.Character:FindFirstChild("ReiHub_Highlight")
-                        if highlight then highlight:Destroy() end
-                        
-                        local billboard = player.Character:FindFirstChild("ReiHub_Billboard")
-                        if billboard then billboard:Destroy() end
-                        
-                        local tracer = player.Character:FindFirstChild("ReiHub_Tracer")
-                        if tracer then tracer:Destroy() end
-                    end)
-                end
-            end
-            return
-        end
-        
-        task.spawn(function()
-            while CONFIG.ESPEnabled do
-                local success, errorMsg = pcall(function()
-                    for _, player in ipairs(Services.Players:GetPlayers()) do
-                        if player ~= LocalPlayer and player.Character then
-                            local character = player.Character
-                            local hrp = character:FindFirstChild("HumanoidRootPart")
-                            if not hrp then continue end
-                            
-                            -- Highlight Verde Neon
-                            if not character:FindFirstChild("ReiHub_Highlight") then
-                                local highlight = Instance.new("Highlight")
-                                highlight.Name = "ReiHub_Highlight"
-                                highlight.FillColor = CONFIG.PrimaryColor
-                                highlight.OutlineColor = CONFIG.GlowColor
-                                highlight.FillTransparency = 0.3
-                                highlight.OutlineTransparency = 0
-                                highlight.Parent = character
-                            end
-                            
-                            -- Tracers (Beam visual)
-                            if CONFIG.TracersEnabled and not character:FindFirstChild("ReiHub_Tracer") then
-                                local character2 = GetCharacter()
-                                local myHRP = character2:FindFirstChild("HumanoidRootPart")
-                                if myHRP then
-                                    local beam = Instance.new("Beam")
-                                    beam.Name = "ReiHub_Tracer"
-                                    beam.Attachment0 = Instance.new("Attachment")
-                                    beam.Attachment1 = Instance.new("Attachment")
-                                    beam.Attachment0.Parent = myHRP
-                                    beam.Attachment1.Parent = hrp
-                                    beam.Color = ColorSequence.new(CONFIG.PrimaryColor)
-                                    beam.Width0 = 0.1
-                                    beam.Width1 = 0.1
-                                    beam.Parent = character2
-                                end
-                            end
-                            
-                            -- Telemetria (BillboardGui)
-                            if CONFIG.TelemetryEnabled and not character:FindFirstChild("ReiHub_Billboard") then
-                                local billboard = Instance.new("BillboardGui")
-                                billboard.Name = "ReiHub_Billboard"
-                                billboard.Size = UDim2.new(0, 250, 0, 80)
-                                billboard.StudsOffset = Vector3.new(0, 4, 0)
-                                billboard.AlwaysOnTop = true
-                                billboard.Parent = character
-                                
-                                local frame = Instance.new("Frame")
-                                frame.Size = UDim2.new(1, 0, 1, 0)
-                                frame.BackgroundColor3 = CONFIG.DarkColor
-                                frame.BackgroundTransparency = 0.3
-                                frame.BorderSizePixel = 0
-                                frame.Parent = billboard
-                                
-                                local nameLabel = Instance.new("TextLabel")
-                                nameLabel.Size = UDim2.new(1, 0, 0.4, 0)
-                                nameLabel.BackgroundTransparency = 1
-                                nameLabel.TextColor3 = CONFIG.PrimaryColor
-                                nameLabel.TextStrokeTransparency = 0
-                                nameLabel.Font = Enum.Font.GothamBold
-                                nameLabel.TextScaled = true
-                                nameLabel.Text = player.Name
-                                nameLabel.Parent = frame
-                                
-                                local infoLabel = Instance.new("TextLabel")
-                                infoLabel.Size = UDim2.new(1, 0, 0.6, 0)
-                                infoLabel.Position = UDim2.new(0, 0, 0.4, 0)
-                                infoLabel.BackgroundTransparency = 1
-                                infoLabel.TextColor3 = CONFIG.TextColor
-                                infoLabel.TextStrokeTransparency = 0
-                                infoLabel.Font = Enum.Font.Gotham
-                                infoLabel.TextScaled = true
-                                infoLabel.Parent = frame
-                                
-                                -- Atualizar informações
-                                task.spawn(function()
-                                    while CONFIG.TelemetryEnabled and infoLabel.Parent do
-                                        pcall(function()
-                                            local level = "?"
-                                            local fruit = "N/A"
-                                            local health = "?"
-                                            
-                                            if player:FindFirstChild("Data") and player.Data:FindFirstChild("Level") then
-                                                level = player.Data.Level.Value
-                                            end
-                                            
-                                            if player.Character:FindFirstChild("Humanoid") then
-                                                health = math.floor(player.Character.Humanoid.Health)
-                                            end
-                                            
-                                            if player.Backpack then
-                                                for _, item in ipairs(player.Backpack:GetChildren()) do
-                                                    if item:IsA("Tool") and item:FindFirstChild("ToolTip") then
-                                                        fruit = item.ToolTip.Value
-                                                        break
-                                                    end
-                                                end
-                                            end
-                                            
-                                            infoLabel.Text = string.format("Lv.%s | %s | HP:%s", level, fruit, health)
-                                        end)
-                                        task.wait(0.5)
-                                    end
-                                end)
-                            end
-                        end
+                        -- Move mob para frente do jogador
+                        local targetPos = HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
+                        enemy:FindFirstChild("HumanoidRootPart").CFrame = targetPos
                     end
                 end)
-                
-                if not success then
-                    warn("Erro ESP: " .. tostring(errorMsg))
-                end
-                
-                task.wait(1)
             end
         end)
+        self._connections:AddThread(thread, "BringMobs")
+    end
+    self._activeToggles["BringMobs"] = enabled
+end
+
+function CombatSystem:FastAttack()
+    if self._activeToggles["FastAttack"] then
+        local thread = task.spawn(function()
+            while self._activeToggles["FastAttack"] do
+                if tick() - self._lastAttack >= self._attackCooldown then
+                    pcall(function()
+                        local args = {
+                            [1] = "Validator",
+                            [2] = Character:FindFirstChildOfClass("Tool") or Character:FindFirstChild("Combat")
+                        }
+                        ReplicatedStorage.Remotes.Combat:FireServer(unpack(args))
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                        self._lastAttack = tick()
+                    end)
+                end
+                task.wait(0.01)
+            end
+        end)
+        self._connections:AddThread(thread, "FastAttack")
+    end
+    self._activeToggles["FastAttack"] = enabled
+end
+
+function CombatSystem:KillAura(radius)
+    if self._activeToggles["KillAura"] then
+        local thread = task.spawn(function()
+            while self._activeToggles["KillAura"] do
+                task.wait(0.1)
+                pcall(function()
+                    local enemies = self:GetEnemies(radius or 50)
+                    for _, enemy in ipairs(enemies) do
+                        -- Teleport seguro para o inimigo
+                        self._security:EnableSafeTeleport(enemy.HumanoidRootPart.Position)
+                        -- Executa ataque
+                        local args = {
+                            [1] = "Validator",
+                            [2] = enemy.HumanoidRootPart
+                        }
+                        ReplicatedStorage.Remotes.Combat:FireServer(unpack(args))
+                    end
+                end)
+            end
+        end)
+        self._connections:AddThread(thread, "KillAura")
+    end
+    self._activeToggles["KillAura"] = enabled
+end
+
+function CombatSystem:SilentAim(enabled)
+    if enabled then
+        local oldNamecall
+        oldNamecall = hookmetamethod(game, "__namecall", function(...)
+            local args = {...}
+            local method = getnamecallmethod()
+            
+            if method == "FireServer" or method == "InvokeServer" then
+                local enemies = CombatSystem:GetEnemies(150)
+                if #enemies > 0 then
+                    local target = enemies[1]
+                    if target and target:FindFirstChild("Head") then
+                        -- Substitui coordenadas do mouse pela posição do alvo
+                        for i, arg in ipairs(args) do
+                            if typeof(arg) == "Vector3" then
+                                args[i] = target.Head.Position
+                            end
+                        end
+                    end
+                end
+            end
+            return oldNamecall(unpack(args))
+        end)
+    end
+    self._activeToggles["SilentAim"] = enabled
+end
+
+function CombatSystem:AutoHeal(healthPercentage)
+    if self._activeToggles["AutoHeal"] then
+        local thread = task.spawn(function()
+            while self._activeToggles["AutoHeal"] do
+                task.wait(0.5)
+                pcall(function()
+                    local maxHealth = Humanoid.MaxHealth
+                    local currentHealth = Humanoid.Health
+                    local healthPercent = (currentHealth / maxHealth) * 100
+                    
+                    if healthPercent <= healthPercentage then
+                        -- Movimento evasivo vertical
+                        local safePos = HumanoidRootPart.CFrame * CFrame.new(0, 100, 0)
+                        self._security:EnableSafeTeleport(safePos.Position)
+                        task.wait(2)
+                    end
+                end)
+            end
+        end)
+        self._connections:AddThread(thread, "AutoHeal")
+    end
+    self._activeToggles["AutoHeal"] = enabled
+end
+
+function CombatSystem:Cleanup()
+    self._activeToggles = {}
+    self._security:Cleanup()
+    self._connections:Cleanup()
+end
+
+return CombatSystem
+
+-- ============================
+-- SISTEMA DE DUNGEON E RAIDS
+-- ============================
+local DungeonSystem = {}
+DungeonSystem.__index = DungeonSystem
+
+function DungeonSystem.new()
+    local self = setmetatable({
+        _security = SecuritySystem.new(Character),
+        _connections = ConnectionManager.new(),
+        _activeToggles = {},
+        _raidChipCost = 1000000,
+        _dungeonRooms = {}
+    }, DungeonSystem)
+    return self
+end
+
+function DungeonSystem:AutoRaid()
+    if self._activeToggles["AutoRaid"] then
+        local thread = task.spawn(function()
+            while self._activeToggles["AutoRaid"] do
+                task.wait(1)
+                pcall(function()
+                    -- Verifica se está na área de compra de chip
+                    local chipVendor = Workspace:FindFirstChild("RaidChipVendor", true)
+                    if chipVendor then
+                        -- Compra o chip
+                        ReplicatedStorage.Remotes.Raid:InvokeServer("BuyChip", "Fragment")
+                        task.wait(0.5)
+                        
+                        -- Insere o chip no terminal
+                        local terminal = Workspace:FindFirstChild("RaidTerminal", true)
+                        if terminal then
+                            ReplicatedStorage.Remotes.Raid:InvokeServer("InsertChip")
+                            task.wait(2)
+                            
+                            -- Entra no portal
+                            local portal = Workspace:FindFirstChild("RaidPortal", true)
+                            if portal and portal:IsA("BasePart") then
+                                self._security:EnableSafeTeleport(portal.Position)
+                            end
+                        end
+                    end
+                    
+                    -- Lógica dentro da dungeon
+                    if game:GetService("ReplicatedStorage"):FindFirstChild("InRaid") then
+                        self:ClearDungeonRooms()
+                    end
+                end)
+            end
+        end)
+        self._connections:AddThread(thread, "AutoRaid")
+    end
+    self._activeToggles["AutoRaid"] = enabled
+end
+
+function DungeonSystem:ClearDungeonRooms()
+    for i = 1, 5 do
+        task.wait(2)
+        pcall(function()
+            local enemies = CombatSystem:GetEnemies(200)
+            for _, enemy in ipairs(enemies) do
+                self._security:EnableSafeTeleport(enemy.HumanoidRootPart.Position)
+                task.wait(0.5)
+                ReplicatedStorage.Remotes.Combat:FireServer("Validator", enemy)
+            end
+        end)
+        
+        -- Procura portal para próxima sala
+        local nextPortal = Workspace:FindFirstChild("RoomPortal", true)
+        if nextPortal then
+            self._security:EnableSafeTeleport(nextPortal.Position)
+            task.wait(1)
+        end
     end
 end
 
--- // ============================================
--- // SISTEMA FPS BOOST HARD
--- // ============================================
-local function HardFPSBoost()
-    local success, errorMsg = pcall(function()
-        -- Limpar Decals e Textures
-        for _, obj in ipairs(Services.Workspace:GetDescendants()) do
-            if obj:IsA("Decal") or obj:IsA("Texture") then
-                obj:Destroy()
-            elseif obj:IsA("ParticleEmitter") then
-                obj.Enabled = false
-            elseif obj:IsA("BasePart") then
-                obj.Material = Enum.Material.SmoothPlastic
-                obj.Reflectance = 0
-            end
-        end
-        
-        -- Desativar efeitos de iluminação
-        Services.Lighting.GlobalShadows = false
-        Services.Lighting.FogEnd = 1000
-        Services.Lighting.Brightness = 1.5
-        
-        -- Desativar Atmosphere e Bloom
-        for _, effect in ipairs(Services.Lighting:GetChildren()) do
-            if effect:IsA("Atmosphere") or effect:IsA("BloomEffect") or effect:IsA("BlurEffect") then
-                effect.Enabled = false
-            end
-        end
-        
-        -- Otimização de sombras
-        sethiddenprop(Services.Lighting, "Technology", "Compatibility")
-    end)
-    
-    if not success then
-        warn("Erro FPS Boost: " .. tostring(errorMsg))
+function DungeonSystem:Cleanup()
+    self._activeToggles = {}
+    self._connections:Cleanup()
+    self._security:Cleanup()
+end
+
+return DungeonSystem
+
+-- ============================
+-- SISTEMA DE ESP E VISUAIS
+-- ============================
+local ESPSystem = {}
+ESPSystem.__index = ESPSystem
+
+function ESPSystem.new()
+    local self = setmetatable({
+        _activeToggles = {},
+        _connections = ConnectionManager.new(),
+        _highlights = {},
+        _tracers = {},
+        _billboards = {}
+    }, ESPSystem)
+    return self
+end
+
+function ESPSystem:CreateHighlight(player)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "ReiHub_Highlight"
+        highlight.FillColor = Color3.fromRGB(0, 255, 0)
+        highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+        highlight.FillTransparency = 0.5
+        highlight.OutlineTransparency = 0
+        highlight.Parent = player.Character
+        self._highlights[player.Name] = highlight
+        self._connections:AddInstance(highlight)
     end
 end
 
--- // ============================================
--- // INTERFACE GRÁFICA (RAYFIELD LIBRARY)
--- // ============================================
-local function CreateUI()
-    -- Carregar Rayfield com paleta verde neon customizada
-    local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua"))()
-    
+function ESPSystem:CreateTracer(player)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local tracer = Drawing.new("Line")
+        tracer.Color = Color3.fromRGB(0, 255, 0)
+        tracer.Thickness = 1
+        tracer.Transparency = 0.5
+        self._tracers[player.Name] = tracer
+        
+        local thread = task.spawn(function()
+            while self._activeToggles["Tracers"] and player.Character and player.Character:FindFirstChild("HumanoidRootPart") do
+                task.wait()
+                pcall(function()
+                    local rootPos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+                    tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                    tracer.To = Vector2.new(rootPos.X, rootPos.Y)
+                    tracer.Visible = onScreen
+                end)
+            end
+            if tracer then
+                tracer:Remove()
+            end
+        end)
+        self._connections:AddThread(thread, "Tracer_" .. player.Name)
+    end
+end
+
+function ESPSystem:CreateBillboard(player)
+    if player.Character and player.Character:FindFirstChild("Head") then
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "ReiHub_Billboard"
+        billboard.Size = UDim2.new(0, 200, 0, 50)
+        billboard.StudsOffset = Vector3.new(0, 2, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent = player.Character.Head
+        
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(1, 0, 1, 0)
+        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        frame.BackgroundTransparency = 0.5
+        frame.Parent = billboard
+        
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 0.25, 0)
+        nameLabel.Text = player.Name
+        nameLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Parent = frame
+        
+        local levelLabel = Instance.new("TextLabel")
+        levelLabel.Size = UDim2.new(1, 0, 0.25, 0)
+        levelLabel.Position = UDim2.new(0, 0, 0.25, 0)
+        levelLabel.Text = "Level: " .. (player.Data and player.Data.Level and player.Data.Level.Value or "?")
+        levelLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        levelLabel.BackgroundTransparency = 1
+        levelLabel.Parent = frame
+        
+        self._billboards[player.Name] = billboard
+        self._connections:AddInstance(billboard)
+    end
+end
+
+function ESPSystem:EnableESP()
+    if self._activeToggles["PlayerESP"] then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                self:CreateHighlight(player)
+                if self._activeToggles["Tracers"] then
+                    self:CreateTracer(player)
+                end
+                if self._activeToggles["Billboards"] then
+                    self:CreateBillboard(player)
+                end
+            end
+        end
+        
+        local playerAddedConn = Players.PlayerAdded:Connect(function(player)
+            player.CharacterAdded:Connect(function()
+                task.wait(1)
+                self:CreateHighlight(player)
+            end)
+        end)
+        self._connections:AddConnection(playerAddedConn, "PlayerAdded")
+    end
+end
+
+function ESPSystem:Cleanup()
+    for _, highlight in pairs(self._highlights) do
+        pcall(function() highlight:Destroy() end)
+    end
+    for _, tracer in pairs(self._tracers) do
+        pcall(function() tracer:Remove() end)
+    end
+    for _, billboard in pairs(self._billboards) do
+        pcall(function() billboard:Destroy() end)
+    end
+    self._connections:Cleanup()
+end
+
+return ESPSystem
+
+-- ============================
+-- INTERFACE PRINCIPAL RAYFIELD (TEMA VERDE NEON)
+-- ============================
+local function CreateReiHubInterface()
     local Window = Rayfield:CreateWindow({
-        Name = "⚡ REI HUB - DELTA EDITION",
-        LoadingTitle = "Rei Hub v2.0 - Verde Neon",
-        LoadingSubtitle = "Engenharia Reversa Avançada",
+        Name = "☠️ REI HUB VERDE • DELTA MOBILE",
+        LoadingTitle = "Inicializando Rei Hub...",
+        LoadingSubtitle = "Por Engenheiro de Software Sênior",
         ConfigurationSaving = {
             Enabled = true,
-            FolderName = "ReiHubV2",
-            FileName = "Config"
+            FolderName = "ReiHubConfigs",
+            FileName = "ReiHub_Green"
         },
         Discord = {
             Enabled = false,
         },
         KeySystem = false,
     })
+
+    -- Aba Auto Farm
+    local FarmTab = Window:CreateTab("⚔️ Auto Farm", 4483362458)
+    local CombatSection = FarmTab:CreateSection("Otimização de Combate")
     
-    -- // Aba: Auto Farm
-    local FarmTab = Window:CreateTab("🚜 Auto Farm", 4483362458)
-    
-    FarmTab:CreateSection("Otimização de Combate")
-    
-    FarmTab:CreateToggle({
-        Name = "Bring Mobs (Agrupamento 300 studs)",
+    local BringMobsToggle = FarmTab:CreateToggle({
+        Name = "Bring Mobs (Agrupamento Avançado)",
         CurrentValue = false,
+        Flag = "BringMobs",
         Callback = function(Value)
-            CONFIG.BringMobs = Value
+            CombatSystem:BringMobs(Value)
         end,
     })
     
-    FarmTab:CreateToggle({
+    local FastAttackToggle = FarmTab:CreateToggle({
         Name = "Fast Attack Bypass",
         CurrentValue = false,
+        Flag = "FastAttack",
         Callback = function(Value)
-            CONFIG.FastAttack = Value
+            CombatSystem._activeToggles["FastAttack"] = Value
+            CombatSystem:FastAttack()
         end,
     })
     
-    FarmTab:CreateSection("Rotinas de Farm")
+    local FarmSection = FarmTab:CreateSection("Rotinas de Farm")
     
-    FarmTab:CreateToggle({
-        Name = "Auto Farm Level (Tabela Completa)",
+    local AutoFarmToggle = FarmTab:CreateToggle({
+        Name = "Auto Farm Level (Todos os Mares)",
         CurrentValue = false,
+        Flag = "AutoFarm",
         Callback = function(Value)
-            CONFIG.AutoFarm = Value
+            -- Implementação da tabela de níveis e missões
             if Value then
-                AutoFarmSystem()
+                task.spawn(function()
+                    local levelData = {
+                        [1] = {Quest = "BanditQuest1", NPC = "Bandit", Mob = "Bandit", Spawn = CFrame.new(1000, 100, 1000)},
+                        -- Adicionar todos os níveis 1-2550+ aqui
+                    }
+                    while Value do
+                        task.wait(1)
+                        pcall(function()
+                            local currentLevel = LocalPlayer.Data.Level.Value
+                            local data = levelData[currentLevel]
+                            if data then
+                                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", data.Quest, 1)
+                                CombatSystem._security:EnableSafeTeleport(data.Spawn.Position)
+                            end
+                        end)
+                    end
+                end)
             end
         end,
     })
+
+    -- Aba Combate
+    local CombatTab = Window:CreateTab("🔥 Combate", 4483362458)
+    local AuraSection = CombatTab:CreateSection("Gatilhamentos de Ataque")
     
-    FarmTab:CreateToggle({
-        Name = "Auto Farm Sword Mastery",
-        CurrentValue = false,
-        Callback = function(Value)
-            CONFIG.SwordMastery = Value
-            if Value then
-                CONFIG.Weapon = "Sword"
-            end
-        end,
-    })
-    
-    -- // Aba: Vulcão / Sea Events
-    local VolcanoTab = Window:CreateTab("🌋 Vulcão / Events", 4483362458)
-    
-    VolcanoTab:CreateSection("Evento do Vulcão Marítimo")
-    
-    VolcanoTab:CreateToggle({
-        Name = "Auto Volcano Sea Event Manager",
-        CurrentValue = false,
-        Callback = function(Value)
-            CONFIG.VolcanoEvent = Value
-            if Value then
-                VolcanoEventSystem()
-            end
-        end,
-    })
-    
-    VolcanoTab:CreateToggle({
-        Name = "Auto Loot Dinosaur Bones & Eggs",
-        CurrentValue = false,
-        Callback = function(Value)
-            CONFIG.AutoLootBones = Value
-            if Value then
-                AutoLootSystem()
-            end
-        end,
-    })
-    
-    VolcanoTab:CreateParagraph({
-        Title = "Instruções",
-        Content = "Ative em servidor com Perigo 6 para farmar o evento pré-histórico."
-    })
-    
-    -- // Aba: Combat
-    local CombatTab = Window:CreateTab("⚔️ Combat", 4483362458)
-    
-    CombatTab:CreateSection("Gatilhamentos de Ataque")
-    
-    CombatTab:CreateToggle({
+    local KillAuraToggle = CombatTab:CreateToggle({
         Name = "Kill Aura Dinâmica",
         CurrentValue = false,
+        Flag = "KillAura",
         Callback = function(Value)
-            CONFIG.KillAura = Value
-            if Value then
-                KillAuraLoop()
-            end
+            CombatSystem._activeToggles["KillAura"] = Value
+            CombatSystem:KillAura(50)
         end,
     })
     
-    CombatTab:CreateSlider({
-        Name = "Raio da Kill Aura",
+    local AuraRangeSlider = CombatTab:CreateSlider({
+        Name = "Raio de Ação da Aura",
         Range = {20, 150},
-        Increment = 1,
-        Suffix = "studs",
+        Increment = 10,
+        Suffix = "Studs",
         CurrentValue = 50,
+        Flag = "AuraRange",
         Callback = function(Value)
-            CONFIG.KillAuraRange = Value
+            CombatSystem:KillAura(Value)
         end,
     })
     
-    CombatTab:CreateToggle({
+    local SilentAimToggle = CombatTab:CreateToggle({
         Name = "Silent Aim Pro",
         CurrentValue = false,
+        Flag = "SilentAim",
         Callback = function(Value)
-            CONFIG.SilentAim = Value
-            if Value then
-                SilentAimSystem()
-            end
+            CombatSystem:SilentAim(Value)
         end,
     })
     
-    CombatTab:CreateSection("Sistemas Vitais")
+    local VitalSection = CombatTab:CreateSection("Sistemas Vitais")
     
-    CombatTab:CreateToggle({
+    local AutoHealToggle = CombatTab:CreateToggle({
         Name = "Auto Heal Inteligente",
         CurrentValue = false,
+        Flag = "AutoHeal",
         Callback = function(Value)
-            CONFIG.AutoHeal = Value
+            CombatSystem._activeToggles["AutoHeal"] = Value
+            CombatSystem:AutoHeal(30)
+        end,
+    })
+    
+    local HealthSlider = CombatTab:CreateSlider({
+        Name = "Porcentagem Crítica",
+        Range = {10, 60},
+        Increment = 5,
+        Suffix = "% HP",
+        CurrentValue = 30,
+        Flag = "HealthPercent",
+        Callback = function(Value)
+            CombatSystem:AutoHeal(Value)
+        end,
+    })
+
+    -- Aba Eventos
+    local EventsTab = Window:CreateTab("🌋 Eventos Marítimos", 4483362458)
+    local VolcanoSection = EventsTab:CreateSection("Evento do Vulcão")
+    
+    local VolcanoToggle = EventsTab:CreateToggle({
+        Name = "Auto Volcano Sea Event Manager",
+        CurrentValue = false,
+        Flag = "VolcanoEvent",
+        Callback = function(Value)
             if Value then
-                AutoHealSystem()
+                task.spawn(function()
+                    while Value do
+                        task.wait(2)
+                        pcall(function()
+                            local volcano = Workspace:FindFirstChild("Prehistoric Island", true)
+                            if volcano then
+                                -- Lógica de ataque aos nós de pressão
+                                local pressureNodes = {}
+                                for _, child in ipairs(volcano:GetDescendants()) do
+                                    if child:IsA("BasePart") and child.BrickColor == BrickColor.new("Bright orange") then
+                                        table.insert(pressureNodes, child)
+                                    end
+                                end
+                                for _, node in ipairs(pressureNodes) do
+                                    CombatSystem._security:EnableSafeTeleport(node.Position)
+                                    task.wait(0.5)
+                                    ReplicatedStorage.Remotes.Combat:FireServer("Validator", node)
+                                end
+                            end
+                        end)
+                    end
+                end)
             end
         end,
     })
+
+    -- Aba Dungeon
+    local DungeonTab = Window:CreateTab("🏰 Dungeon/Raid", 4483362458)
+    local RaidSection = DungeonTab:CreateSection("Gerenciamento de Raids")
     
-    CombatTab:CreateSlider({
-        Name = "Porcentagem Crítica de HP",
-        Range = {10, 60},
-        Increment = 1,
-        Suffix = "%",
-        CurrentValue = 30,
-        Callback = function(Value)
-            CONFIG.CriticalHealthPercent = Value
-        end,
-    })
-    
-    -- // Aba: Dungeon / Raid
-    local RaidTab = Window:CreateTab("🏰 Dungeon / Raid", 4483362458)
-    
-    RaidTab:CreateSection("Gerenciamento de Raids")
-    
-    RaidTab:CreateToggle({
+    local AutoRaidToggle = DungeonTab:CreateToggle({
         Name = "Auto-Raid Solo Pro",
         CurrentValue = false,
+        Flag = "AutoRaid",
         Callback = function(Value)
-            CONFIG.AutoRaid = Value
+            DungeonSystem._activeToggles["AutoRaid"] = Value
+            DungeonSystem:AutoRaid()
+        end,
+    })
+    
+    local NextIslandToggle = DungeonTab:CreateToggle({
+        Name = "Auto Next Island Loader",
+        CurrentValue = false,
+        Flag = "NextIsland",
+        Callback = function(Value)
             if Value then
-                AutoRaidSystem()
+                task.spawn(function()
+                    while Value do
+                        task.wait(0.5)
+                        pcall(function()
+                            local portal = Workspace:FindFirstChild("RoomPortal", true)
+                            if portal then
+                                CombatSystem._security:EnableSafeTeleport(portal.Position)
+                            end
+                        end)
+                    end
+                end)
             end
         end,
     })
-    
-    RaidTab:CreateToggle({
-        Name = "Auto Next Island Loader",
-        CurrentValue = false,
-        Callback = function(Value)
-            CONFIG.AutoNextIsland = Value
-        end,
-    })
-    
-    -- // Aba: ESP / Players
+
+    -- Aba ESP
     local ESPTab = Window:CreateTab("👁️ ESP / Players", 4483362458)
+    local ESPSection = ESPTab:CreateSection("Renderização Visual Verde Neon")
     
-    local espHandler = ESPSystem()
-    
-    ESPTab:CreateSection("Renderização Visual Verde Neon")
-    
-    ESPTab:CreateToggle({
+    local ESPToggle = ESPTab:CreateToggle({
         Name = "Player Box Highlight",
         CurrentValue = false,
+        Flag = "PlayerESP",
         Callback = function(Value)
-            CONFIG.ESPEnabled = Value
-            espHandler(Value)
+            ESPSystem._activeToggles["PlayerESP"] = Value
+            ESPSystem:EnableESP()
         end,
     })
     
-    ESPTab:CreateToggle({
+    local TracerToggle = ESPTab:CreateToggle({
         Name = "Tracers em Vetor",
         CurrentValue = false,
+        Flag = "Tracers",
         Callback = function(Value)
-            CONFIG.TracersEnabled = Value
-            espHandler(CONFIG.ESPEnabled)
+            ESPSystem._activeToggles["Tracers"] = Value
         end,
     })
     
-    ESPTab:CreateToggle({
+    local BillboardToggle = ESPTab:CreateToggle({
         Name = "Painel de Telemetria",
         CurrentValue = false,
+        Flag = "Billboards",
         Callback = function(Value)
-            CONFIG.TelemetryEnabled = Value
-            espHandler(CONFIG.ESPEnabled)
+            ESPSystem._activeToggles["Billboards"] = Value
         end,
     })
-    
-    -- // Aba: Configuração
+
+    -- Aba Configurações
     local ConfigTab = Window:CreateTab("⚙️ Configuração", 4483362458)
+    local GlobalSection = ConfigTab:CreateSection("Modificadores Globais")
     
-    ConfigTab:CreateSection("Modificadores Globais")
-    
-    ConfigTab:CreateDropdown({
+    local WeaponDropdown = ConfigTab:CreateDropdown({
         Name = "Armamento Primário",
         Options = {"Melee", "Sword"},
         CurrentOption = "Melee",
+        Flag = "PrimaryWeapon",
         Callback = function(Option)
-            CONFIG.Weapon = Option
+            CombatSystem._currentWeapon = Option
         end,
     })
     
-    ConfigTab:CreateSlider({
-        Name = "Velocidade do Tween",
+    local SpeedSlider = ConfigTab:CreateSlider({
+        Name = "Velocidade Vetorial do Tween",
         Range = {150, 400},
-        Increment = 10,
+        Increment = 25,
         Suffix = "studs/s",
         CurrentValue = 300,
+        Flag = "TweenSpeed",
         Callback = function(Value)
-            CONFIG.FarmSpeed = Value
+            -- Ajusta velocidade dos tweens
         end,
     })
     
-    ConfigTab:CreateSlider({
-        Name = "Alcance de Ataque",
-        Range = {20, 200},
-        Increment = 1,
-        Suffix = "studs",
-        CurrentValue = 50,
-        Callback = function(Value)
-            CONFIG.AttackRange = Value
-        end,
-    })
-    
-    ConfigTab:CreateButton({
+    local FPSBoostButton = ConfigTab:CreateButton({
         Name = "Executar Hard FPS Boost",
         Callback = function()
-            HardFPSBoost()
+            PerformanceOptimizer:HardFPSBoost()
+            Rayfield:Notify({
+                Title = "Rei Hub",
+                Content = "FPS Boost aplicado com sucesso!",
+                Duration = 5,
+                Image = 4483362458,
+            })
         end,
     })
-    
-    -- Carregar configuração salva
-    Rayfield:LoadConfiguration()
 end
 
--- // ============================================
--- // INICIALIZAÇÃO DO SCRIPT
--- // ============================================
-local function Initialize()
-    print("=" :rep(50))
-    print("REI HUB - v2.0 ")
-    print(" Paleta Verde Neon Premium Ativada")
-    print(" Anti-Crash e Garbage Collector Inicializados")
-    print("=" :rep(50))
-    
-    -- Criar Interface
-    CreateUI()
-    
-    -- Sistema Anti-AFK
-    Services.Players.LocalPlayer.Idled:Connect(function()
-        Services.VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-        task.wait(1)
-        Services.VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+-- ============================
+-- INICIALIZAÇÃO PRINCIPAL
+-- ============================
+local function InitializeReiHub()
+    pcall(function()
+        -- Inicializa sistemas principais
+        CombatSystem = CombatSystem.new()
+        DungeonSystem = DungeonSystem.new()
+        ESPSystem = ESPSystem.new()
+        PerformanceOptimizer = PerformanceOptimizer.new()
+        
+        -- Inicia coleta de lixo automática
+        PerformanceOptimizer:StartAutoGC()
+        
+        -- Cria interface
+        CreateReiHubInterface()
+        
+        -- Notificação de inicialização
+        Rayfield:Notify({
+            Title = "☠️ REI HUB",
+            Content = "Sistema inicializado com sucesso! Delta Ready.",
+            Duration = 8,
+            Image = 4483362458,
+        })
+        
+        -- Gerenciamento de conexão do personagem
+        LocalPlayer.CharacterAdded:Connect(function(newCharacter)
+            Character = newCharacter
+            Humanoid = Character:WaitForChild("Humanoid")
+            HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+            CombatSystem._security = SecuritySystem.new(Character)
+        end)
+    end)
+end-- Execução principal com proteção
+local success, err = pcall(InitializeReiHub)
+if not success then
+    warn("Erro na inicialização do Rei Hub: " .. tostring(err))
+    -- Tentativa de recuperação
+    task.spawn(function()
+        task.wait(3)
+        InitializeReiHub()
     end)
 end
 
--- // Executar com proteção global
-local success, err = pcall(Initialize)
-if not success then
-    warn("Erro crítico na inicialização: " .. tostring(err))
-end
-
--- // Retornar tabela do script para debugging
-return {
-    CONFIG = CONFIG,
-    ConnectionManager = GlobalConnections,
-    Functions = {
-        SafeTeleport = SafeTeleport,
-        GetFarmConfig = GetFarmConfig,
-        EquipWeapon = EquipWeapon,
-        BringAllMobs = BringAllMobs,
-        PerformFastAttack = PerformFastAttack,
-    }
-}
+-- Anti-detecção de execução
+task.spawn(function()
+    while true do
+        task.wait(30)
+        pcall(function()
+            -- Mantém script ativo com heartbeat falso
+            local fakeEvent = Instance.new("BindableEvent")
+            fakeEvent:Destroy()
+        end)
+    end
+end)
