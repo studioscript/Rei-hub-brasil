@@ -1,997 +1,462 @@
+do
+    local Babix = game.CoreGui:FindFirstChild("ThunderScreen")
+    if Babix then
+        Babix:Destroy()
+    end
+end
 
---]]
-
--- ============================
--- CONFIGURAÇÕES GLOBAIS DE AMBIENTE
--- ============================
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-local Lighting = game:GetService("Lighting")
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
+local TweenService = game:GetService("TweenService")
+local DiscordLib = {}
 
-local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Balaraja = Instance.new("ScreenGui")
+Balaraja.Name = "Rei Hub"
+Balaraja.Parent = game.CoreGui
+Balaraja.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- ============================
--- GERENCIADOR DE CONEXÕES (ANTI-MEMORY LEAK)
--- ============================
-local ConnectionManager = {}
-ConnectionManager.__index = ConnectionManager
+local NotiFrame = Instance.new("Frame")
+NotiFrame.Name = "NotiFrame"
+NotiFrame.Parent = Balaraja
+NotiFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+NotiFrame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+NotiFrame.BackgroundTransparency = 1
+NotiFrame.Position = UDim2.new(1.2, 0, 0.0613496937, 0)
+NotiFrame.Size = UDim2.new(0, 1632, 0, 100)
 
-function ConnectionManager.new()
-    local self = setmetatable({
-        _connections = {},
-        _threads = {},
-        _instances = {},
-        _cleanupQueue = {}
-    }, ConnectionManager)
-    return self
+local Notilistlayout = Instance.new("UIListLayout")
+Notilistlayout.Name = "Notilistlayout"
+Notilistlayout.Parent = NotiFrame
+Notilistlayout.FillDirection = Enum.FillDirection.Vertical
+Notilistlayout.SortOrder = Enum.SortOrder.LayoutOrder
+Notilistlayout.Padding = UDim.new(0, 5)
+
+DiscordLib.Notification = function(self, text, text2, delays, logo)
+    if (logo == nil) then
+        logo = "99131375937917"
+    end
+    if (delays == nil) then
+        delays = 1
+    end
+
+    local TitleFrame = Instance.new("Frame")
+    TitleFrame.Name = "TitleFrame"
+    TitleFrame.Parent = NotiFrame
+    TitleFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    TitleFrame.Size = UDim2.new(0, 0, 0, 0)
+
+    local Main_UiStroke = Instance.new("UIStroke")
+    Main_UiStroke.Thickness = 1
+    Main_UiStroke.Name = ""
+    Main_UiStroke.Parent = TitleFrame
+    Main_UiStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    Main_UiStroke.LineJoinMode = Enum.LineJoinMode.Round
+    Main_UiStroke.Color = Color3.fromRGB(0, 255, 0)
+    Main_UiStroke.Transparency = 0
+
+    TitleFrame:TweenSizeAndPosition(UDim2.new(0, 250 - 10, 0, 70), UDim2.new(0.5, 0, 0.5, 0), "Out", "Back", 0.3, true)
+
+    local ConnerTitile = Instance.new("UICorner")
+    ConnerTitile.CornerRadius = UDim.new(0, 4)
+    ConnerTitile.Name = "ConnerTitile"
+    ConnerTitile.Parent = TitleFrame
+
+    local imagenoti = Instance.new("ImageLabel")
+    imagenoti.Name = "imagenoti"
+    imagenoti.Parent = TitleFrame
+    imagenoti.AnchorPoint = Vector2.new(0.5, 0.5)
+    imagenoti.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    imagenoti.Position = UDim2.new(0.135999978, 0, 0.5, 0)
+    imagenoti.Size = UDim2.new(0, 50, 0, 50)
+    imagenoti.BackgroundTransparency = 1
+    imagenoti.Image = "http://www.roblox.com/asset/?id=" .. tostring(logo)
+
+    local txdlid = Instance.new("TextLabel")
+    local LableFrame = Instance.new("Frame")
+
+    txdlid.Name = "txdlid"
+    txdlid.Parent = TitleFrame
+    txdlid.BackgroundColor3 = Color3.fromRGB(85, 170, 255)
+    txdlid.BackgroundTransparency = 1
+    txdlid.Position = UDim2.new(0.25, 0, 0.25, 0)
+    txdlid.Size = UDim2.new(0, 175, 0, 24)
+    txdlid.Font = Enum.Font.Code
+    txdlid.TextColor3 = Color3.fromRGB(85, 170, 255)
+    txdlid.TextSize = 13
+    txdlid.Text = text
+    txdlid.TextXAlignment = Enum.TextXAlignment.Left
+
+    LableFrame.Name = "LableFrame"
+    LableFrame.Parent = TitleFrame
+    LableFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    LableFrame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    LableFrame.BackgroundTransparency = 1
+    LableFrame.Position = UDim2.new(0.625999987, 0, 0.620000005, 0)
+    LableFrame.Size = UDim2.new(0, 175, 0, 25)
+
+    local TextNoti = Instance.new("TextLabel")
+    TextNoti.Name = "TextNoti"
+    TextNoti.Parent = LableFrame
+    TextNoti.Active = true
+    TextNoti.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    TextNoti.BackgroundTransparency = 1
+    TextNoti.Size = UDim2.new(0, 175, 0, 25)
+    TextNoti.Font = Enum.Font.Code
+    TextNoti.Text = text2
+    TextNoti.TextColor3 = Color3.fromRGB(0, 255, 0)
+    TextNoti.TextSize = 12
+    TextNoti.TextXAlignment = Enum.TextXAlignment.Left
+
+    repeat
+        wait()
+    until TitleFrame.Size == UDim2.new(0, 250 - 10, 0, 70)
+
+    local Time = Instance.new("Frame")
+    local UICorner = Instance.new("UICorner")
+    local UIPadding = Instance.new("UIPadding")
+
+    Time.Name = "Time"
+    Time.Parent = TitleFrame
+    Time.Active = true
+    Time.BackgroundColor3 = Color3.fromRGB(85, 170, 255)
+    Time.BorderSizePixel = 0
+    Time.Position = UDim2.new(0.0320000015, 0, 0.870000005, 0)
+    Time.Size = UDim2.new(0, 236, 0, 3)
+
+    UICorner.Parent = Time
+    UICorner.CornerRadius = UDim.new(0, 4)
+    UICorner.Name = ""
+
+    UIPadding.Parent = NotiFrame
+    UIPadding.PaddingLeft = UDim.new(0, 15)
+    UIPadding.PaddingTop = UDim.new(0, 15)
+
+    TweenService:Create(Time, TweenInfo.new(tonumber(delays), Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 0, 0, 3)}):Play()
+
+    delay(tonumber(delays), function()
+        TweenService:Create(imagenoti, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {ImageTransparency = 1}):Play()
+        TweenService:Create(TextNoti, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextTransparency = 1}):Play()
+        TweenService:Create(txdlid, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextTransparency = 1}):Play()
+        wait(0.3)
+        TweenService:Create(TitleFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 0, 0, 70)}):Play()
+        wait(0.3)
+        TitleFrame:Destroy()
+    end)
 end
 
-function ConnectionManager:AddConnection(connection, identifier)
-    if typeof(connection) == "RBXScriptConnection" then
-        local id = identifier or #self._connections + 1
-        self._connections[id] = connection
-        return id
+
+local function SaveKey(key)
+    writefile("GTVZ_Key.txt", key)
+end
+
+
+local function LoadSavedKey()
+    if isfile("GTVZ_Key.txt") then
+        return readfile("GTVZ_Key.txt")
     end
     return nil
 end
 
-function ConnectionManager:AddThread(thread, identifier)
-    if typeof(thread) == "thread" then
-        local id = identifier or #self._threads + 1
-        self._threads[id] = thread
-        return id
-    end
-    return nil
+
+local function IsKeyValid(key)
+    return key == "GTVZ_FREEHS62BEU746"
 end
 
-function ConnectionManager:AddInstance(instance, identifier)
-    if typeof(instance) == "Instance" then
-        local id = identifier or #self._instances + 1
-        self._instances[id] = instance
-        return id
-    end
-    return nil
-end
 
-function ConnectionManager:Disconnect(identifier)
-    if self._connections[identifier] then
-        pcall(function()
-            self._connections[identifier]:Disconnect()
-        end)
-        self._connections[identifier] = nil
-    end
-end
+local savedKey = LoadSavedKey()
+local keyValid = false
 
-function ConnectionManager:Cleanup()
-    -- Desconecta todas as conexões RBXScriptConnection
-    for id, connection in pairs(self._connections) do
-        pcall(function()
-            connection:Disconnect()
-        end)
-        self._connections[id] = nil
-    end
+if savedKey and IsKeyValid(savedKey) then
+    keyValid = true
+    DiscordLib:Notification("Key System", "KEY VÁLIDA ENCONTRADA! CARREGANDO...", 5)
+    wait(2)
     
-    -- Finaliza threads pendentes
-    for id, thread in pairs(self._threads) do
-        pcall(function()
-            coroutine.close(thread)
-        end)
-        self._threads[id] = nil
-    end
+    loadstring(game:HttpGet("https://pastefy.app/rJBYPQ9w/raw"))()
+else
     
-    -- Destroi instâncias criadas
-    for id, instance in pairs(self._instances) do
-        pcall(function()
-            instance:Destroy()
-        end)
-        self._instances[id] = nil
-    end
+    keyValid = false
 end
 
-return ConnectionManager
 
--- ============================
--- SISTEMA DE SEGURANÇA ANTI-KICK E RAYCAST
--- ============================
-local SecuritySystem = {}
-SecuritySystem.__index = SecuritySystem
-
-function SecuritySystem.new(character)
-    local self = setmetatable({
-        Character = character,
-        HumanoidRootPart = character:WaitForChild("HumanoidRootPart"),
-        Humanoid = character:WaitForChild("Humanoid"),
-        BodyVelocity = nil,
-        OriginalCollisions = {},
-        IsTeleporting = false
-    }, SecuritySystem)
-    return self
-end
-
-function SecuritySystem:GroundCheck(position)
-    local rayOrigin = position + Vector3.new(0, 10, 0)
-    local rayDirection = Vector3.new(0, -500, 0)
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {self.Character}
+if not keyValid then
     
-    local raycastResult = Workspace:Raycast(rayOrigin, rayDirection, raycastParams)
-    return raycastResult
-end
+    local keysystem = Instance.new("ScreenGui")
+    local Main1 = Instance.new("Frame")
+    local maincorner = Instance.new("UICorner")
+    local DISCORD = Instance.new("TextButton")
+    local CORNERDISCORD = Instance.new("UICorner")
+    local NAME = Instance.new("TextLabel")
+    local HUB = Instance.new("TextLabel")
+    local SUBMIT = Instance.new("TextButton")
+    local WindowStroke = Instance.new("UIStroke")
+    local WindowStrokeshit2 = Instance.new("UIStroke")
+    local WindowStrokeshit3 = Instance.new("UIStroke")
+    local WindowStrokeshit4 = Instance.new("UIStroke")
 
-function SecuritySystem:EnableSafeTeleport(targetPosition)
-    if self.IsTeleporting then return false end
-    self.IsTeleporting = true
-    
-    local success, err = pcall(function()
-        -- Ground Check antes do teleporte
-        local groundResult = self:GroundCheck(targetPosition)
-        if not groundResult then
-            -- Ajusta altura para evitar queda no vazio
-            targetPosition = Vector3.new(targetPosition.X, targetPosition.Y + 50, targetPosition.Z)
-        end
-        
-        -- Instancia BodyVelocity para evitar detecção de velocidade
-        self.BodyVelocity = Instance.new("BodyVelocity")
-        self.BodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        self.BodyVelocity.Velocity = Vector3.zero
-        self.BodyVelocity.P = 1250
-        self.BodyVelocity.Parent = self.HumanoidRootPart
-        
-        -- Tweens com trajetória segura
-        local tweenInfo = TweenInfo.new(
-            (self.HumanoidRootPart.Position - targetPosition).Magnitude / 300,
-            Enum.EasingStyle.Linear,
-            Enum.EasingDirection.Out
-        )
-        
-        local tween = TweenService:Create(self.HumanoidRootPart, tweenInfo, {
-            CFrame = CFrame.new(targetPosition) * CFrame.Angles(0, math.rad(self.HumanoidRootPart.Orientation.Y), 0)
-        })
-        
-        tween:Play()
-        tween.Completed:Wait()
-        
-        -- Limpeza pós-teleporte
-        if self.BodyVelocity then
-            self.BodyVelocity:Destroy()
-            self.BodyVelocity = nil
+    keysystem.Name = "keysystem"
+    keysystem.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    keysystem.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    Main1.Name = "Main1"
+    Main1.Parent = keysystem
+    Main1.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Main1.Position = UDim2.new(0.317497045, 0, 0.144578308, 0)
+    Main1.Size = UDim2.new(0, 190, 0, 200)
+    Main1.Active = true
+    Main1.Visible = false
+    Main1.Draggable = true
+
+    WindowStroke.Name = "WindowStroke"
+    WindowStroke.Parent = Main1
+    WindowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    WindowStroke.Color = Color3.fromRGB(0, 255, 0)
+    WindowStroke.LineJoinMode = Enum.LineJoinMode.Round
+    WindowStroke.Thickness = 2
+    WindowStroke.Transparency = 0
+    WindowStroke.Enabled = true
+    WindowStroke.Archivable = true
+
+    WindowStrokeshit2.Name = "WindowStroke"
+    WindowStrokeshit2.Parent = DISCORD
+    WindowStrokeshit2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    WindowStrokeshit2.Color = Color3.fromRGB(0, 255, 0)
+    WindowStrokeshit2.LineJoinMode = Enum.LineJoinMode.Round
+    WindowStrokeshit2.Thickness = 1
+    WindowStrokeshit2.Transparency = 0
+    WindowStrokeshit2.Archivable = false
+    WindowStrokeshit2.Enabled = true
+
+    WindowStrokeshit3.Name = "WindowStroke"
+    WindowStrokeshit3.Parent = getkey
+    WindowStrokeshit3.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    WindowStrokeshit3.Color = Color3.fromRGB(0, 255, 0)
+    WindowStrokeshit3.LineJoinMode = Enum.LineJoinMode.Round
+    WindowStrokeshit3.Thickness = 1
+    WindowStrokeshit3.Transparency = 0
+    WindowStrokeshit3.Archivable = false
+    WindowStrokeshit3.Enabled = true
+
+    WindowStrokeshit4.Name = "WindowStroke"
+    WindowStrokeshit4.Parent = SUBMIT
+    WindowStrokeshit4.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    WindowStrokeshit4.Color = Color3.fromRGB(0, 255, 0)
+    WindowStrokeshit4.LineJoinMode = Enum.LineJoinMode.Round
+    WindowStrokeshit4.Thickness = 1
+    WindowStrokeshit4.Transparency = 0
+    WindowStrokeshit4.Archivable = false
+    WindowStrokeshit4.Enabled = true
+
+    maincorner.Name = "maincorner"
+    maincorner.Parent = Main1
+
+    CORNERDISCORD.Name = "CORNER DISCORD"
+    CORNERDISCORD.Parent = DISCORD
+
+    NAME.Name = "NAME"
+    NAME.Parent = Main1
+    NAME.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    NAME.BackgroundTransparency = 1
+    NAME.Position = UDim2.new(0.111489578, 0, 0.00442506745, 0)
+    NAME.Size = UDim2.new(0, 150, 0, 50)
+    NAME.Font = Enum.Font.FredokaOne
+    NAME.Text = "SELECT HUB"
+    NAME.TextColor3 = Color3.fromRGB(0, 255, 0)
+    NAME.TextSize = 14
+
+    HUB.Name = "HUB"
+    HUB.Parent = Main1
+    HUB.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    HUB.BackgroundTransparency = 1
+    HUB.Position = UDim2.new(0.198232114, 0, 0.00442507118, 0)
+    HUB.Size = UDim2.new(0, 191, 0, 50)
+    HUB.Font = Enum.Font.FredokaOne
+    HUB.Text = ""
+    HUB.TextColor3 = Color3.fromRGB(0, 255, 0)
+    HUB.TextSize = 16
+    HUB.TextWrapped = true
+
+    SUBMIT.Name = "SUBMIT"
+    SUBMIT.Parent = Main1
+    SUBMIT.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+    SUBMIT.Position = UDim2.new(0.13418974, 0, 0.3360128, 0)
+    SUBMIT.Size = UDim2.new(0, 140, 0, 40)
+    SUBMIT.Font = Enum.Font.SourceSans
+    SUBMIT.Text = "GTVZ HUB"
+    SUBMIT.TextColor3 = Color3.fromRGB(0, 255, 0)
+    SUBMIT.TextSize = 14
+    SUBMIT.TextWrapped = true
+
+    SUBMIT.MouseButton1Click:Connect(function()
+        Main1.Visible = false
+        wait(1)
+        Main1:Destroy()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Fiend1sh/FiendMain/refs/heads/main/ZynHub", true))()
+    end)
+
+    -- Main Key System GUI
+    local keysystem2 = Instance.new("ScreenGui")
+    local Main = Instance.new("Frame")
+    local maincorner2 = Instance.new("UICorner")
+    local LOGO = Instance.new("ImageLabel")
+    local Frame = Instance.new("Frame")
+    local KEYHERE = Instance.new("TextBox")
+    local CORNERKEY = Instance.new("UICorner")
+    local GETKEY = Instance.new("TextButton")
+    local CORNERGET = Instance.new("UICorner")
+    local SUBMIT2 = Instance.new("TextButton")
+    local UICorner = Instance.new("UICorner")
+    local DISCORD2 = Instance.new("TextButton")
+    local CORNERDISCORD2 = Instance.new("UICorner")
+    local NAME2 = Instance.new("TextLabel")
+    local HUB2 = Instance.new("TextLabel")
+    local WindowStroke2 = Instance.new("UIStroke")
+    local WindowStrokeshit = Instance.new("UIStroke")
+
+    keysystem2.Name = "keysystem"
+    keysystem2.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    keysystem2.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    Main.Name = "Main"
+    Main.Parent = keysystem2
+    Main.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Main.Position = UDim2.new(0.5, -200, 0.5, -125)
+    Main.Size = UDim2.new(0, 404, 0, 206)
+    Main.Active = true
+    Main.Draggable = true
+
+    WindowStroke2.Name = "WindowStroke"
+    WindowStroke2.Parent = Main
+    WindowStroke2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    WindowStroke2.Color = Color3.fromRGB(0, 255, 0)
+    WindowStroke2.LineJoinMode = Enum.LineJoinMode.Round
+    WindowStroke2.Thickness = 1
+    WindowStroke2.Transparency = 0
+    WindowStroke2.Enabled = true
+    WindowStroke2.Archivable = true
+
+    WindowStrokeshit.Name = "WindowStroke"
+    WindowStrokeshit.Parent = KEYHERE
+    WindowStrokeshit.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    WindowStrokeshit.Color = Color3.fromRGB(0, 255, 0)
+    WindowStrokeshit.LineJoinMode = Enum.LineJoinMode.Round
+    WindowStrokeshit.Thickness = 1
+    WindowStrokeshit.Transparency = 0
+    WindowStrokeshit.Archivable = false
+    WindowStrokeshit.Enabled = true
+
+    maincorner2.Name = "maincorner"
+    maincorner2.Parent = Main
+
+    LOGO.Name = "LOGO"
+    LOGO.Parent = Main
+    LOGO.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    LOGO.BackgroundTransparency = 1
+    LOGO.Position = UDim2.new(-0.0470297076, 0, 0.0708536655, 0)
+    LOGO.Size = UDim2.new(0, 216, 0, 199)
+    LOGO.Image = "rbxassetid://99131375937917"
+
+    Frame.Parent = Main
+    Frame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    Frame.BorderSizePixel = 0
+    Frame.Position = UDim2.new(0.0247524753, 0, 0.140776694, 0)
+    Frame.Size = UDim2.new(0, 384, 0, 2)
+
+    KEYHERE.Name = "KEY HERE"
+    KEYHERE.Parent = Main
+    KEYHERE.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+    KEYHERE.Position = UDim2.new(0.445544571, 0, 0.233009696, 0)
+    KEYHERE.Size = UDim2.new(0, 200, 0, 50)
+    KEYHERE.Font = Enum.Font.Gotham
+    KEYHERE.PlaceholderText = "CHAVE🔑"
+    KEYHERE.Text = ""
+    KEYHERE.TextColor3 = Color3.fromRGB(0, 255, 0)
+    KEYHERE.TextSize = 14
+
+    CORNERKEY.Name = "CORNER KEY"
+    CORNERKEY.Parent = KEYHERE
+
+    GETKEY.Name = "GET KEY"
+    GETKEY.Parent = Main
+    GETKEY.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+    GETKEY.Position = UDim2.new(0.425742567, 0, 0.572815537, 0)
+    GETKEY.Size = UDim2.new(0, 104, 0, 40)
+    GETKEY.Font = Enum.Font.FredokaOne
+    GETKEY.Text = "PEGA CHAVE"
+    GETKEY.TextColor3 = Color3.fromRGB(0, 255, 0)
+    GETKEY.TextSize = 14
+
+    GETKEY.MouseButton1Click:Connect(function()
+        setclipboard("https://link-target.net/1344304/gtvz-hub")
+        DiscordLib:Notification("CHAVE🔑", "\nLINK COPIADO\nVAI NO NAVEGADOR E COLA", 3)
+    end)
+
+    CORNERGET.Name = "CORNER GET"
+    CORNERGET.Parent = GETKEY
+
+    SUBMIT2.Name = "SUBMIT"
+    SUBMIT2.Parent = Main
+    SUBMIT2.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+    SUBMIT2.Position = UDim2.new(0.710396051, 0, 0.572815537, 0)
+    SUBMIT2.Size = UDim2.new(0, 101, 0, 40)
+    SUBMIT2.Font = Enum.Font.FredokaOne
+    SUBMIT2.Text = "CHECAR CHAVE"
+    SUBMIT2.TextColor3 = Color3.fromRGB(0, 255, 0)
+    SUBMIT2.TextSize = 14
+
+    SUBMIT2.MouseButton1Click:Connect(function()
+        local inputKey = KEYHERE.Text
+        if IsKeyValid(inputKey) then
+            SaveKey(inputKey)
+            DiscordLib:Notification("Key System", "CHAVE VÁLIDA! SALVA COM SUCESSO!", 3)
+            wait(2)
+            DiscordLib:Notification("Key System", "CARREGANDO SCRIPT...", 3)
+            wait(1)
+            Main1.Visible = true
+            keysystem2:Destroy()
+        else
+            DiscordLib:Notification("CHAVE🔑", "\nCHAVE INVÁLIDA!", 5)
         end
     end)
-    
-    self.IsTeleporting = false
-    return success
-end
 
-function SecuritySystem:SetNoClip(enable)
-    for _, part in ipairs(self.Character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            if enable then
-                self.OriginalCollisions[part] = part.CanCollide
-                part.CanCollide = false
-            else
-                if self.OriginalCollisions[part] ~= nil then
-                    part.CanCollide = self.OriginalCollisions[part]
-                    self.OriginalCollisions[part] = nil
-                end
-            end
-        end
-    end
-end
+    UICorner.Parent = SUBMIT2
 
-function SecuritySystem:Cleanup()
-    self:SetNoClip(false)
-    if self.BodyVelocity then
-        self.BodyVelocity:Destroy()
-    end
-end
+    DISCORD2.Name = "DISCORD"
+    DISCORD2.Parent = Main
+    DISCORD2.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+    DISCORD2.Position = UDim2.new(0.487623751, 0, 0.805825293, 0)
+    DISCORD2.Size = UDim2.new(0, 166, 0, 31)
+    DISCORD2.Font = Enum.Font.FredokaOne
+    DISCORD2.Text = "DISCORD"
+    DISCORD2.TextColor3 = Color3.fromRGB(0, 255, 0)
+    DISCORD2.TextSize = 14
 
-return SecuritySystem
-
--- ============================
--- MÓDULO DE OTIMIZAÇÃO DE MEMÓRIA E PERFORMANCE
--- ============================
-local PerformanceOptimizer = {}
-PerformanceOptimizer.__index = PerformanceOptimizer
-
-function PerformanceOptimizer.new()
-    local self = setmetatable({
-        _cleanupTimers = {},
-        _gcThreshold = 15000 -- 15 segundos para coleta de lixo
-    }, PerformanceOptimizer)
-    return self
-end
-
-function PerformanceOptimizer:HardFPSBoost()
-    local success, err = pcall(function()
-        -- Destruir elementos pesados de renderização
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            pcall(function()
-                if obj:IsA("Decal") or obj:IsA("Texture") then
-                    obj:Destroy()
-                elseif obj:IsA("ParticleEmitter") then
-                    obj.Enabled = false
-                elseif obj:IsA("BasePart") then
-                    obj.Material = Enum.Material.SmoothPlastic
-                elseif obj:IsA("Light") then
-                    obj.Brightness = math.min(obj.Brightness, 1)
-                end
-            end)
-        end
-        
-        -- Otimizações de iluminação
-        Lighting.GlobalShadows = false
-        Lighting.Brightness = 2
-        
-        -- Desativa efeitos atmosféricos
-        for _, child in ipairs(Lighting:GetChildren()) do
-            if child:IsA("Atmosphere") then
-                child.Density = 0
-            elseif child:IsA("BloomEffect") then
-                child.Enabled = false
-            elseif child:IsA("BlurEffect") then
-                child.Enabled = false
-            end
-        end
-        
-        -- Força garbage collection
-        workspace:ClearAllChildren()
+    DISCORD2.MouseButton1Click:Connect(function()
+        setclipboard("https://discord.com/invite/Cg4fDkn6un")
+        DiscordLib:Notification("DISCORD", "LINK DISCORD COPIADO", 8)
     end)
-    return success
+
+    CORNERDISCORD2.Name = "CORNER DISCORD"
+    CORNERDISCORD2.Parent = DISCORD2
+
+    NAME2.Name = "NAME"
+    NAME2.Parent = Main
+    NAME2.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    NAME2.BackgroundTransparency = 1
+    NAME2.Position = UDim2.new(0.301980197, 0, -0.0533980615, 0)
+    NAME2.Size = UDim2.new(0, 191, 0, 50)
+    NAME2.Font = Enum.Font.FredokaOne
+    NAME2.Text = "GTVZ           KEY SYSTEM"
+    NAME2.TextColor3 = Color3.fromRGB(0, 255, 0)
+    NAME2.TextSize = 16
+
+    HUB2.Name = "HUB"
+    HUB2.Parent = Main
+    HUB2.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    HUB2.BackgroundTransparency = 1
+    HUB2.Position = UDim2.new(0.227722734, 0, -0.0533980578, 0)
+    HUB2.Size = UDim2.new(0, 191, 0, 50)
+    HUB2.Font = Enum.Font.FredokaOne
+    HUB2.Text = "   HUB"
+    HUB2.TextColor3 = Color3.fromRGB(0, 255, 0)
+    HUB2.TextSize = 16
+    HUB2.TextWrapped = true
 end
-
-function PerformanceOptimizer:StartAutoGC()
-    local connMgr = ConnectionManager.new()
-    
-    local thread = task.spawn(function()
-        while true do
-            task.wait(self._gcThreshold / 1000)
-            pcall(function()
-                workspace:ClearAllChildren()
-                game:GetService("Debris"):ClearAllChildren()
-            end)
-        end
-    end)
-    
-    connMgr:AddThread(thread, "AutoGC")
-    return connMgr
-end
-
-function PerformanceOptimizer:OptimizeRayfield(rayfieldWindow)
-    -- Reduz consumo de Rayfield
-    pcall(function()
-        local windows = game:GetService("CoreGui"):FindFirstChild("Rayfield")
-        if windows then
-            for _, element in ipairs(windows:GetDescendants()) do
-                if element:IsA("Frame") or element:IsA("ScrollingFrame") then
-                    element.ClipsDescendants = true
-                end
-            end
-        end
-    end)
-end
-
-return PerformanceOptimizer
-
--- ============================
--- SISTEMA DE FARM E COMBATE AVANÇADO
--- ============================
-local CombatSystem = {}
-CombatSystem.__index = CombatSystem
-
-function CombatSystem.new()
-    local self = setmetatable({
-        _activeToggles = {},
-        _security = SecuritySystem.new(Character),
-        _connections = ConnectionManager.new(),
-        _currentWeapon = "Melee",
-        _attackCooldown = 0.15,
-        _lastAttack = 0
-    }, CombatSystem)
-    return self
-end
-
-function CombatSystem:GetEnemies(radius)
-    local enemies = {}
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
-            if obj.Humanoid.Health > 0 and obj ~= Character then
-                local distance = (HumanoidRootPart.Position - obj.HumanoidRootPart.Position).Magnitude
-                if distance <= (radius or 300) then
-                    table.insert(enemies, obj)
-                end
-            end
-        end
-    end
-    return enemies
-end
-
-function CombatSystem:BringMobs(enabled)
-    if enabled then
-        local thread = task.spawn(function()
-            while self._activeToggles["BringMobs"] do
-                task.wait(0.05)
-                pcall(function()
-                    local enemies = self:GetEnemies(300)
-                    for _, enemy in ipairs(enemies) do
-                        -- Desativa colisão do mob
-                        for _, part in ipairs(enemy:GetDescendants()) do
-                            if part:IsA("BasePart") then
-                                part.CanCollide = false
-                            end
-                        end
-                        -- Move mob para frente do jogador
-                        local targetPos = HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
-                        enemy:FindFirstChild("HumanoidRootPart").CFrame = targetPos
-                    end
-                end)
-            end
-        end)
-        self._connections:AddThread(thread, "BringMobs")
-    end
-    self._activeToggles["BringMobs"] = enabled
-end
-
-function CombatSystem:FastAttack()
-    if self._activeToggles["FastAttack"] then
-        local thread = task.spawn(function()
-            while self._activeToggles["FastAttack"] do
-                if tick() - self._lastAttack >= self._attackCooldown then
-                    pcall(function()
-                        local args = {
-                            [1] = "Validator",
-                            [2] = Character:FindFirstChildOfClass("Tool") or Character:FindFirstChild("Combat")
-                        }
-                        ReplicatedStorage.Remotes.Combat:FireServer(unpack(args))
-                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-                        self._lastAttack = tick()
-                    end)
-                end
-                task.wait(0.01)
-            end
-        end)
-        self._connections:AddThread(thread, "FastAttack")
-    end
-    self._activeToggles["FastAttack"] = enabled
-end
-
-function CombatSystem:KillAura(radius)
-    if self._activeToggles["KillAura"] then
-        local thread = task.spawn(function()
-            while self._activeToggles["KillAura"] do
-                task.wait(0.1)
-                pcall(function()
-                    local enemies = self:GetEnemies(radius or 50)
-                    for _, enemy in ipairs(enemies) do
-                        -- Teleport seguro para o inimigo
-                        self._security:EnableSafeTeleport(enemy.HumanoidRootPart.Position)
-                        -- Executa ataque
-                        local args = {
-                            [1] = "Validator",
-                            [2] = enemy.HumanoidRootPart
-                        }
-                        ReplicatedStorage.Remotes.Combat:FireServer(unpack(args))
-                    end
-                end)
-            end
-        end)
-        self._connections:AddThread(thread, "KillAura")
-    end
-    self._activeToggles["KillAura"] = enabled
-end
-
-function CombatSystem:SilentAim(enabled)
-    if enabled then
-        local oldNamecall
-        oldNamecall = hookmetamethod(game, "__namecall", function(...)
-            local args = {...}
-            local method = getnamecallmethod()
-            
-            if method == "FireServer" or method == "InvokeServer" then
-                local enemies = CombatSystem:GetEnemies(150)
-                if #enemies > 0 then
-                    local target = enemies[1]
-                    if target and target:FindFirstChild("Head") then
-                        -- Substitui coordenadas do mouse pela posição do alvo
-                        for i, arg in ipairs(args) do
-                            if typeof(arg) == "Vector3" then
-                                args[i] = target.Head.Position
-                            end
-                        end
-                    end
-                end
-            end
-            return oldNamecall(unpack(args))
-        end)
-    end
-    self._activeToggles["SilentAim"] = enabled
-end
-
-function CombatSystem:AutoHeal(healthPercentage)
-    if self._activeToggles["AutoHeal"] then
-        local thread = task.spawn(function()
-            while self._activeToggles["AutoHeal"] do
-                task.wait(0.5)
-                pcall(function()
-                    local maxHealth = Humanoid.MaxHealth
-                    local currentHealth = Humanoid.Health
-                    local healthPercent = (currentHealth / maxHealth) * 100
-                    
-                    if healthPercent <= healthPercentage then
-                        -- Movimento evasivo vertical
-                        local safePos = HumanoidRootPart.CFrame * CFrame.new(0, 100, 0)
-                        self._security:EnableSafeTeleport(safePos.Position)
-                        task.wait(2)
-                    end
-                end)
-            end
-        end)
-        self._connections:AddThread(thread, "AutoHeal")
-    end
-    self._activeToggles["AutoHeal"] = enabled
-end
-
-function CombatSystem:Cleanup()
-    self._activeToggles = {}
-    self._security:Cleanup()
-    self._connections:Cleanup()
-end
-
-return CombatSystem
-
--- ============================
--- SISTEMA DE DUNGEON E RAIDS
--- ============================
-local DungeonSystem = {}
-DungeonSystem.__index = DungeonSystem
-
-function DungeonSystem.new()
-    local self = setmetatable({
-        _security = SecuritySystem.new(Character),
-        _connections = ConnectionManager.new(),
-        _activeToggles = {},
-        _raidChipCost = 1000000,
-        _dungeonRooms = {}
-    }, DungeonSystem)
-    return self
-end
-
-function DungeonSystem:AutoRaid()
-    if self._activeToggles["AutoRaid"] then
-        local thread = task.spawn(function()
-            while self._activeToggles["AutoRaid"] do
-                task.wait(1)
-                pcall(function()
-                    -- Verifica se está na área de compra de chip
-                    local chipVendor = Workspace:FindFirstChild("RaidChipVendor", true)
-                    if chipVendor then
-                        -- Compra o chip
-                        ReplicatedStorage.Remotes.Raid:InvokeServer("BuyChip", "Fragment")
-                        task.wait(0.5)
-                        
-                        -- Insere o chip no terminal
-                        local terminal = Workspace:FindFirstChild("RaidTerminal", true)
-                        if terminal then
-                            ReplicatedStorage.Remotes.Raid:InvokeServer("InsertChip")
-                            task.wait(2)
-                            
-                            -- Entra no portal
-                            local portal = Workspace:FindFirstChild("RaidPortal", true)
-                            if portal and portal:IsA("BasePart") then
-                                self._security:EnableSafeTeleport(portal.Position)
-                            end
-                        end
-                    end
-                    
-                    -- Lógica dentro da dungeon
-                    if game:GetService("ReplicatedStorage"):FindFirstChild("InRaid") then
-                        self:ClearDungeonRooms()
-                    end
-                end)
-            end
-        end)
-        self._connections:AddThread(thread, "AutoRaid")
-    end
-    self._activeToggles["AutoRaid"] = enabled
-end
-
-function DungeonSystem:ClearDungeonRooms()
-    for i = 1, 5 do
-        task.wait(2)
-        pcall(function()
-            local enemies = CombatSystem:GetEnemies(200)
-            for _, enemy in ipairs(enemies) do
-                self._security:EnableSafeTeleport(enemy.HumanoidRootPart.Position)
-                task.wait(0.5)
-                ReplicatedStorage.Remotes.Combat:FireServer("Validator", enemy)
-            end
-        end)
-        
-        -- Procura portal para próxima sala
-        local nextPortal = Workspace:FindFirstChild("RoomPortal", true)
-        if nextPortal then
-            self._security:EnableSafeTeleport(nextPortal.Position)
-            task.wait(1)
-        end
-    end
-end
-
-function DungeonSystem:Cleanup()
-    self._activeToggles = {}
-    self._connections:Cleanup()
-    self._security:Cleanup()
-end
-
-return DungeonSystem
-
--- ============================
--- SISTEMA DE ESP E VISUAIS
--- ============================
-local ESPSystem = {}
-ESPSystem.__index = ESPSystem
-
-function ESPSystem.new()
-    local self = setmetatable({
-        _activeToggles = {},
-        _connections = ConnectionManager.new(),
-        _highlights = {},
-        _tracers = {},
-        _billboards = {}
-    }, ESPSystem)
-    return self
-end
-
-function ESPSystem:CreateHighlight(player)
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local highlight = Instance.new("Highlight")
-        highlight.Name = "ReiHub_Highlight"
-        highlight.FillColor = Color3.fromRGB(0, 255, 0)
-        highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
-        highlight.FillTransparency = 0.5
-        highlight.OutlineTransparency = 0
-        highlight.Parent = player.Character
-        self._highlights[player.Name] = highlight
-        self._connections:AddInstance(highlight)
-    end
-end
-
-function ESPSystem:CreateTracer(player)
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local tracer = Drawing.new("Line")
-        tracer.Color = Color3.fromRGB(0, 255, 0)
-        tracer.Thickness = 1
-        tracer.Transparency = 0.5
-        self._tracers[player.Name] = tracer
-        
-        local thread = task.spawn(function()
-            while self._activeToggles["Tracers"] and player.Character and player.Character:FindFirstChild("HumanoidRootPart") do
-                task.wait()
-                pcall(function()
-                    local rootPos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
-                    tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-                    tracer.To = Vector2.new(rootPos.X, rootPos.Y)
-                    tracer.Visible = onScreen
-                end)
-            end
-            if tracer then
-                tracer:Remove()
-            end
-        end)
-        self._connections:AddThread(thread, "Tracer_" .. player.Name)
-    end
-end
-
-function ESPSystem:CreateBillboard(player)
-    if player.Character and player.Character:FindFirstChild("Head") then
-        local billboard = Instance.new("BillboardGui")
-        billboard.Name = "ReiHub_Billboard"
-        billboard.Size = UDim2.new(0, 200, 0, 50)
-        billboard.StudsOffset = Vector3.new(0, 2, 0)
-        billboard.AlwaysOnTop = true
-        billboard.Parent = player.Character.Head
-        
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(1, 0, 1, 0)
-        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        frame.BackgroundTransparency = 0.5
-        frame.Parent = billboard
-        
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, 0, 0.25, 0)
-        nameLabel.Text = player.Name
-        nameLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Parent = frame
-        
-        local levelLabel = Instance.new("TextLabel")
-        levelLabel.Size = UDim2.new(1, 0, 0.25, 0)
-        levelLabel.Position = UDim2.new(0, 0, 0.25, 0)
-        levelLabel.Text = "Level: " .. (player.Data and player.Data.Level and player.Data.Level.Value or "?")
-        levelLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        levelLabel.BackgroundTransparency = 1
-        levelLabel.Parent = frame
-        
-        self._billboards[player.Name] = billboard
-        self._connections:AddInstance(billboard)
-    end
-end
-
-function ESPSystem:EnableESP()
-    if self._activeToggles["PlayerESP"] then
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer then
-                self:CreateHighlight(player)
-                if self._activeToggles["Tracers"] then
-                    self:CreateTracer(player)
-                end
-                if self._activeToggles["Billboards"] then
-                    self:CreateBillboard(player)
-                end
-            end
-        end
-        
-        local playerAddedConn = Players.PlayerAdded:Connect(function(player)
-            player.CharacterAdded:Connect(function()
-                task.wait(1)
-                self:CreateHighlight(player)
-            end)
-        end)
-        self._connections:AddConnection(playerAddedConn, "PlayerAdded")
-    end
-end
-
-function ESPSystem:Cleanup()
-    for _, highlight in pairs(self._highlights) do
-        pcall(function() highlight:Destroy() end)
-    end
-    for _, tracer in pairs(self._tracers) do
-        pcall(function() tracer:Remove() end)
-    end
-    for _, billboard in pairs(self._billboards) do
-        pcall(function() billboard:Destroy() end)
-    end
-    self._connections:Cleanup()
-end
-
-return ESPSystem
-
--- ============================
--- INTERFACE PRINCIPAL RAYFIELD (TEMA VERDE NEON)
--- ============================
-local function CreateReiHubInterface()
-    local Window = Rayfield:CreateWindow({
-        Name = "☠️ REI HUB VERDE • DELTA MOBILE",
-        LoadingTitle = "Inicializando Rei Hub...",
-        LoadingSubtitle = "Por Engenheiro de Software Sênior",
-        ConfigurationSaving = {
-            Enabled = true,
-            FolderName = "ReiHubConfigs",
-            FileName = "ReiHub_Green"
-        },
-        Discord = {
-            Enabled = false,
-        },
-        KeySystem = false,
-    })
-
-    -- Aba Auto Farm
-    local FarmTab = Window:CreateTab("⚔️ Auto Farm", 4483362458)
-    local CombatSection = FarmTab:CreateSection("Otimização de Combate")
-    
-    local BringMobsToggle = FarmTab:CreateToggle({
-        Name = "Bring Mobs (Agrupamento Avançado)",
-        CurrentValue = false,
-        Flag = "BringMobs",
-        Callback = function(Value)
-            CombatSystem:BringMobs(Value)
-        end,
-    })
-    
-    local FastAttackToggle = FarmTab:CreateToggle({
-        Name = "Fast Attack Bypass",
-        CurrentValue = false,
-        Flag = "FastAttack",
-        Callback = function(Value)
-            CombatSystem._activeToggles["FastAttack"] = Value
-            CombatSystem:FastAttack()
-        end,
-    })
-    
-    local FarmSection = FarmTab:CreateSection("Rotinas de Farm")
-    
-    local AutoFarmToggle = FarmTab:CreateToggle({
-        Name = "Auto Farm Level (Todos os Mares)",
-        CurrentValue = false,
-        Flag = "AutoFarm",
-        Callback = function(Value)
-            -- Implementação da tabela de níveis e missões
-            if Value then
-                task.spawn(function()
-                    local levelData = {
-                        [1] = {Quest = "BanditQuest1", NPC = "Bandit", Mob = "Bandit", Spawn = CFrame.new(1000, 100, 1000)},
-                        -- Adicionar todos os níveis 1-2550+ aqui
-                    }
-                    while Value do
-                        task.wait(1)
-                        pcall(function()
-                            local currentLevel = LocalPlayer.Data.Level.Value
-                            local data = levelData[currentLevel]
-                            if data then
-                                ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", data.Quest, 1)
-                                CombatSystem._security:EnableSafeTeleport(data.Spawn.Position)
-                            end
-                        end)
-                    end
-                end)
-            end
-        end,
-    })
-
-    -- Aba Combate
-    local CombatTab = Window:CreateTab("🔥 Combate", 4483362458)
-    local AuraSection = CombatTab:CreateSection("Gatilhamentos de Ataque")
-    
-    local KillAuraToggle = CombatTab:CreateToggle({
-        Name = "Kill Aura Dinâmica",
-        CurrentValue = false,
-        Flag = "KillAura",
-        Callback = function(Value)
-            CombatSystem._activeToggles["KillAura"] = Value
-            CombatSystem:KillAura(50)
-        end,
-    })
-    
-    local AuraRangeSlider = CombatTab:CreateSlider({
-        Name = "Raio de Ação da Aura",
-        Range = {20, 150},
-        Increment = 10,
-        Suffix = "Studs",
-        CurrentValue = 50,
-        Flag = "AuraRange",
-        Callback = function(Value)
-            CombatSystem:KillAura(Value)
-        end,
-    })
-    
-    local SilentAimToggle = CombatTab:CreateToggle({
-        Name = "Silent Aim Pro",
-        CurrentValue = false,
-        Flag = "SilentAim",
-        Callback = function(Value)
-            CombatSystem:SilentAim(Value)
-        end,
-    })
-    
-    local VitalSection = CombatTab:CreateSection("Sistemas Vitais")
-    
-    local AutoHealToggle = CombatTab:CreateToggle({
-        Name = "Auto Heal Inteligente",
-        CurrentValue = false,
-        Flag = "AutoHeal",
-        Callback = function(Value)
-            CombatSystem._activeToggles["AutoHeal"] = Value
-            CombatSystem:AutoHeal(30)
-        end,
-    })
-    
-    local HealthSlider = CombatTab:CreateSlider({
-        Name = "Porcentagem Crítica",
-        Range = {10, 60},
-        Increment = 5,
-        Suffix = "% HP",
-        CurrentValue = 30,
-        Flag = "HealthPercent",
-        Callback = function(Value)
-            CombatSystem:AutoHeal(Value)
-        end,
-    })
-
-    -- Aba Eventos
-    local EventsTab = Window:CreateTab("🌋 Eventos Marítimos", 4483362458)
-    local VolcanoSection = EventsTab:CreateSection("Evento do Vulcão")
-    
-    local VolcanoToggle = EventsTab:CreateToggle({
-        Name = "Auto Volcano Sea Event Manager",
-        CurrentValue = false,
-        Flag = "VolcanoEvent",
-        Callback = function(Value)
-            if Value then
-                task.spawn(function()
-                    while Value do
-                        task.wait(2)
-                        pcall(function()
-                            local volcano = Workspace:FindFirstChild("Prehistoric Island", true)
-                            if volcano then
-                                -- Lógica de ataque aos nós de pressão
-                                local pressureNodes = {}
-                                for _, child in ipairs(volcano:GetDescendants()) do
-                                    if child:IsA("BasePart") and child.BrickColor == BrickColor.new("Bright orange") then
-                                        table.insert(pressureNodes, child)
-                                    end
-                                end
-                                for _, node in ipairs(pressureNodes) do
-                                    CombatSystem._security:EnableSafeTeleport(node.Position)
-                                    task.wait(0.5)
-                                    ReplicatedStorage.Remotes.Combat:FireServer("Validator", node)
-                                end
-                            end
-                        end)
-                    end
-                end)
-            end
-        end,
-    })
-
-    -- Aba Dungeon
-    local DungeonTab = Window:CreateTab("🏰 Dungeon/Raid", 4483362458)
-    local RaidSection = DungeonTab:CreateSection("Gerenciamento de Raids")
-    
-    local AutoRaidToggle = DungeonTab:CreateToggle({
-        Name = "Auto-Raid Solo Pro",
-        CurrentValue = false,
-        Flag = "AutoRaid",
-        Callback = function(Value)
-            DungeonSystem._activeToggles["AutoRaid"] = Value
-            DungeonSystem:AutoRaid()
-        end,
-    })
-    
-    local NextIslandToggle = DungeonTab:CreateToggle({
-        Name = "Auto Next Island Loader",
-        CurrentValue = false,
-        Flag = "NextIsland",
-        Callback = function(Value)
-            if Value then
-                task.spawn(function()
-                    while Value do
-                        task.wait(0.5)
-                        pcall(function()
-                            local portal = Workspace:FindFirstChild("RoomPortal", true)
-                            if portal then
-                                CombatSystem._security:EnableSafeTeleport(portal.Position)
-                            end
-                        end)
-                    end
-                end)
-            end
-        end,
-    })
-
-    -- Aba ESP
-    local ESPTab = Window:CreateTab("👁️ ESP / Players", 4483362458)
-    local ESPSection = ESPTab:CreateSection("Renderização Visual Verde Neon")
-    
-    local ESPToggle = ESPTab:CreateToggle({
-        Name = "Player Box Highlight",
-        CurrentValue = false,
-        Flag = "PlayerESP",
-        Callback = function(Value)
-            ESPSystem._activeToggles["PlayerESP"] = Value
-            ESPSystem:EnableESP()
-        end,
-    })
-    
-    local TracerToggle = ESPTab:CreateToggle({
-        Name = "Tracers em Vetor",
-        CurrentValue = false,
-        Flag = "Tracers",
-        Callback = function(Value)
-            ESPSystem._activeToggles["Tracers"] = Value
-        end,
-    })
-    
-    local BillboardToggle = ESPTab:CreateToggle({
-        Name = "Painel de Telemetria",
-        CurrentValue = false,
-        Flag = "Billboards",
-        Callback = function(Value)
-            ESPSystem._activeToggles["Billboards"] = Value
-        end,
-    })
-
-    -- Aba Configurações
-    local ConfigTab = Window:CreateTab("⚙️ Configuração", 4483362458)
-    local GlobalSection = ConfigTab:CreateSection("Modificadores Globais")
-    
-    local WeaponDropdown = ConfigTab:CreateDropdown({
-        Name = "Armamento Primário",
-        Options = {"Melee", "Sword"},
-        CurrentOption = "Melee",
-        Flag = "PrimaryWeapon",
-        Callback = function(Option)
-            CombatSystem._currentWeapon = Option
-        end,
-    })
-    
-    local SpeedSlider = ConfigTab:CreateSlider({
-        Name = "Velocidade Vetorial do Tween",
-        Range = {150, 400},
-        Increment = 25,
-        Suffix = "studs/s",
-        CurrentValue = 300,
-        Flag = "TweenSpeed",
-        Callback = function(Value)
-            -- Ajusta velocidade dos tweens
-        end,
-    })
-    
-    local FPSBoostButton = ConfigTab:CreateButton({
-        Name = "Executar Hard FPS Boost",
-        Callback = function()
-            PerformanceOptimizer:HardFPSBoost()
-            Rayfield:Notify({
-                Title = "Rei Hub",
-                Content = "FPS Boost aplicado com sucesso!",
-                Duration = 5,
-                Image = 4483362458,
-            })
-        end,
-    })
-end
-
--- ============================
--- INICIALIZAÇÃO PRINCIPAL
--- ============================
-local function InitializeReiHub()
-    pcall(function()
-        -- Inicializa sistemas principais
-        CombatSystem = CombatSystem.new()
-        DungeonSystem = DungeonSystem.new()
-        ESPSystem = ESPSystem.new()
-        PerformanceOptimizer = PerformanceOptimizer.new()
-        
-        -- Inicia coleta de lixo automática
-        PerformanceOptimizer:StartAutoGC()
-        
-        -- Cria interface
-        CreateReiHubInterface()
-        
-        -- Notificação de inicialização
-        Rayfield:Notify({
-            Title = "☠️ REI HUB",
-            Content = "Sistema inicializado com sucesso! Delta Ready.",
-            Duration = 8,
-            Image = 4483362458,
-        })
-        
-        -- Gerenciamento de conexão do personagem
-        LocalPlayer.CharacterAdded:Connect(function(newCharacter)
-            Character = newCharacter
-            Humanoid = Character:WaitForChild("Humanoid")
-            HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-            CombatSystem._security = SecuritySystem.new(Character)
-        end)
-    end)
-end-- Execução principal com proteção
-local success, err = pcall(InitializeReiHub)
-if not success then
-    warn("Erro na inicialização do Rei Hub: " .. tostring(err))
-    -- Tentativa de recuperação
-    task.spawn(function()
-        task.wait(3)
-        InitializeReiHub()
-    end)
-end
-
--- Anti-detecção de execução
-task.spawn(function()
-    while true do
-        task.wait(30)
-        pcall(function()
-            -- Mantém script ativo com heartbeat falso
-            local fakeEvent = Instance.new("BindableEvent")
-            fakeEvent:Destroy()
-        end)
-    end
-end)
