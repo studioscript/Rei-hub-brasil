@@ -1,462 +1,759 @@
-do
-    local Babix = game.CoreGui:FindFirstChild("ThunderScreen")
-    if Babix then
-        Babix:Destroy()
-    end
-end
+-- ========================================
+-- REI HUB | BLOX FRUITS
+-- Script simplificado com funções principais
+-- ========================================
 
-local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
-local DiscordLib = {}
+local RunService = game:GetService("RunService")
 
-local Balaraja = Instance.new("ScreenGui")
-Balaraja.Name = "Rei Hub"
-Balaraja.Parent = game.CoreGui
-Balaraja.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- ========================================
+-- CONFIGURAÇÕES INICIAIS
+-- ========================================
+_G.ReiHub = {
+    -- Auto Farm
+    AutoFarm = false,
+    FarmMode = "Level", -- Level, Boss, Material
+    SelectWeapon = "Melee",
+    
+    -- Auto Boss
+    AutoBoss = false,
+    SelectBoss = "",
+    
+    -- Auto Stats
+    AutoStats = false,
+    StatType = "Melee", -- Melee, Defense, Sword, Gun, Devil
+    
+    -- Auto Haki
+    AutoHaki = false,
+    
+    -- Auto Ken (Observation)
+    AutoKen = false,
+    
+    -- Outros
+    AutoCollectChest = false,
+    AutoFarmMaterial = false,
+    SelectMaterial = "",
+    
+    -- Bring Mobs
+    BringRange = 235,
+    MobHeight = 20,
+    
+    -- Velocidade
+    SpeedEnabled = false,
+    SpeedValue = 50,
+    
+    -- No Clip
+    NoClip = false,
+}
 
-local NotiFrame = Instance.new("Frame")
-NotiFrame.Name = "NotiFrame"
-NotiFrame.Parent = Balaraja
-NotiFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-NotiFrame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-NotiFrame.BackgroundTransparency = 1
-NotiFrame.Position = UDim2.new(1.2, 0, 0.0613496937, 0)
-NotiFrame.Size = UDim2.new(0, 1632, 0, 100)
+-- ========================================
+-- SALVAR CONFIGURAÇÕES
+-- ========================================
+local FolderName = "Rei Hub"
+local FileName = "Settings.json"
+local FullPath = FolderName .. "/" .. FileName
 
-local Notilistlayout = Instance.new("UIListLayout")
-Notilistlayout.Name = "Notilistlayout"
-Notilistlayout.Parent = NotiFrame
-Notilistlayout.FillDirection = Enum.FillDirection.Vertical
-Notilistlayout.SortOrder = Enum.SortOrder.LayoutOrder
-Notilistlayout.Padding = UDim.new(0, 5)
+if makefolder and not isfolder(FolderName) then makefolder(FolderName) end
 
-DiscordLib.Notification = function(self, text, text2, delays, logo)
-    if (logo == nil) then
-        logo = "99131375937917"
-    end
-    if (delays == nil) then
-        delays = 1
-    end
-
-    local TitleFrame = Instance.new("Frame")
-    TitleFrame.Name = "TitleFrame"
-    TitleFrame.Parent = NotiFrame
-    TitleFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    TitleFrame.Size = UDim2.new(0, 0, 0, 0)
-
-    local Main_UiStroke = Instance.new("UIStroke")
-    Main_UiStroke.Thickness = 1
-    Main_UiStroke.Name = ""
-    Main_UiStroke.Parent = TitleFrame
-    Main_UiStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    Main_UiStroke.LineJoinMode = Enum.LineJoinMode.Round
-    Main_UiStroke.Color = Color3.fromRGB(0, 255, 0)
-    Main_UiStroke.Transparency = 0
-
-    TitleFrame:TweenSizeAndPosition(UDim2.new(0, 250 - 10, 0, 70), UDim2.new(0.5, 0, 0.5, 0), "Out", "Back", 0.3, true)
-
-    local ConnerTitile = Instance.new("UICorner")
-    ConnerTitile.CornerRadius = UDim.new(0, 4)
-    ConnerTitile.Name = "ConnerTitile"
-    ConnerTitile.Parent = TitleFrame
-
-    local imagenoti = Instance.new("ImageLabel")
-    imagenoti.Name = "imagenoti"
-    imagenoti.Parent = TitleFrame
-    imagenoti.AnchorPoint = Vector2.new(0.5, 0.5)
-    imagenoti.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    imagenoti.Position = UDim2.new(0.135999978, 0, 0.5, 0)
-    imagenoti.Size = UDim2.new(0, 50, 0, 50)
-    imagenoti.BackgroundTransparency = 1
-    imagenoti.Image = "http://www.roblox.com/asset/?id=" .. tostring(logo)
-
-    local txdlid = Instance.new("TextLabel")
-    local LableFrame = Instance.new("Frame")
-
-    txdlid.Name = "txdlid"
-    txdlid.Parent = TitleFrame
-    txdlid.BackgroundColor3 = Color3.fromRGB(85, 170, 255)
-    txdlid.BackgroundTransparency = 1
-    txdlid.Position = UDim2.new(0.25, 0, 0.25, 0)
-    txdlid.Size = UDim2.new(0, 175, 0, 24)
-    txdlid.Font = Enum.Font.Code
-    txdlid.TextColor3 = Color3.fromRGB(85, 170, 255)
-    txdlid.TextSize = 13
-    txdlid.Text = text
-    txdlid.TextXAlignment = Enum.TextXAlignment.Left
-
-    LableFrame.Name = "LableFrame"
-    LableFrame.Parent = TitleFrame
-    LableFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    LableFrame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    LableFrame.BackgroundTransparency = 1
-    LableFrame.Position = UDim2.new(0.625999987, 0, 0.620000005, 0)
-    LableFrame.Size = UDim2.new(0, 175, 0, 25)
-
-    local TextNoti = Instance.new("TextLabel")
-    TextNoti.Name = "TextNoti"
-    TextNoti.Parent = LableFrame
-    TextNoti.Active = true
-    TextNoti.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    TextNoti.BackgroundTransparency = 1
-    TextNoti.Size = UDim2.new(0, 175, 0, 25)
-    TextNoti.Font = Enum.Font.Code
-    TextNoti.Text = text2
-    TextNoti.TextColor3 = Color3.fromRGB(0, 255, 0)
-    TextNoti.TextSize = 12
-    TextNoti.TextXAlignment = Enum.TextXAlignment.Left
-
-    repeat
-        wait()
-    until TitleFrame.Size == UDim2.new(0, 250 - 10, 0, 70)
-
-    local Time = Instance.new("Frame")
-    local UICorner = Instance.new("UICorner")
-    local UIPadding = Instance.new("UIPadding")
-
-    Time.Name = "Time"
-    Time.Parent = TitleFrame
-    Time.Active = true
-    Time.BackgroundColor3 = Color3.fromRGB(85, 170, 255)
-    Time.BorderSizePixel = 0
-    Time.Position = UDim2.new(0.0320000015, 0, 0.870000005, 0)
-    Time.Size = UDim2.new(0, 236, 0, 3)
-
-    UICorner.Parent = Time
-    UICorner.CornerRadius = UDim.new(0, 4)
-    UICorner.Name = ""
-
-    UIPadding.Parent = NotiFrame
-    UIPadding.PaddingLeft = UDim.new(0, 15)
-    UIPadding.PaddingTop = UDim.new(0, 15)
-
-    TweenService:Create(Time, TweenInfo.new(tonumber(delays), Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 0, 0, 3)}):Play()
-
-    delay(tonumber(delays), function()
-        TweenService:Create(imagenoti, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {ImageTransparency = 1}):Play()
-        TweenService:Create(TextNoti, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextTransparency = 1}):Play()
-        TweenService:Create(txdlid, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextTransparency = 1}):Play()
-        wait(0.3)
-        TweenService:Create(TitleFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 0, 0, 70)}):Play()
-        wait(0.3)
-        TitleFrame:Destroy()
+function SaveSettings()
+    if not writefile then return end
+    pcall(function()
+        writefile(FullPath, game:GetService("HttpService"):JSONEncode(_G.ReiHub))
     end)
 end
 
-
-local function SaveKey(key)
-    writefile("GTVZ_Key.txt", key)
-end
-
-
-local function LoadSavedKey()
-    if isfile("GTVZ_Key.txt") then
-        return readfile("GTVZ_Key.txt")
+function LoadSettings()
+    if isfile and isfile(FullPath) then
+        pcall(function()
+            local data = game:GetService("HttpService"):JSONDecode(readfile(FullPath))
+            for k, v in pairs(data) do _G.ReiHub[k] = v end
+        end)
     end
-    return nil
+end
+LoadSettings()
+
+-- ========================================
+-- FUNÇÕES AUXILIARES
+-- ========================================
+local function GetHRP()
+    local char = Player.Character
+    return char and char:FindFirstChild("HumanoidRootPart")
 end
 
-
-local function IsKeyValid(key)
-    return key == "GTVZ_FREEHS62BEU746"
+local function EquipWeapon(weaponName)
+    local char = Player.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    local tool = Player.Backpack:FindFirstChild(weaponName) or char:FindFirstChild(weaponName)
+    if tool and tool.Parent ~= char then
+        hum:EquipTool(tool)
+    end
 end
 
-
-local savedKey = LoadSavedKey()
-local keyValid = false
-
-if savedKey and IsKeyValid(savedKey) then
-    keyValid = true
-    DiscordLib:Notification("Key System", "KEY VÁLIDA ENCONTRADA! CARREGANDO...", 5)
-    wait(2)
-    
-    loadstring(game:HttpGet("https://pastefy.app/rJBYPQ9w/raw"))()
-else
-    
-    keyValid = false
+local function UseSkill(skill)
+    VirtualInputManager:SendKeyEvent(true, skill, false, game)
+    task.wait(0.05)
+    VirtualInputManager:SendKeyEvent(false, skill, false, game)
 end
 
+local function TP(pos)
+    local hrp = GetHRP()
+    if hrp then
+        hrp.CFrame = pos
+    end
+end
 
-if not keyValid then
+local function IsAlive(model)
+    local hum = model and model:FindFirstChild("Humanoid")
+    return hum and hum.Health > 0
+end
+
+-- ========================================
+-- AUTO KEN (OBSERVATION HAKI)
+-- ========================================
+local function HasKen()
+    local char = Player.Character
+    return char and char:FindFirstChild("HasKen")
+end
+
+task.spawn(function()
+    while task.wait(0.3) do
+        if _G.ReiHub.AutoKen and not HasKen() then
+            pcall(function()
+                ReplicatedStorage.Remotes.CommE:FireServer("Ken", true)
+            end)
+        end
+    end
+end)
+
+-- ========================================
+-- AUTO HAKI (BUSO)
+-- ========================================
+task.spawn(function()
+    while task.wait(1) do
+        if _G.ReiHub.AutoHaki then
+            pcall(function()
+                if not Player.Character:FindFirstChild("HasBuso") then
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso")
+                end
+            end)
+        end
+    end
+end)
+
+-- ========================================
+-- AUTO STATS
+-- ========================================
+task.spawn(function()
+    while task.wait(0.5) do
+        if _G.ReiHub.AutoStats and Player.Data.Points.Value > 0 then
+            pcall(function()
+                local statMap = {
+                    Melee = "Melee",
+                    Defense = "Defense", 
+                    Sword = "Sword",
+                    Gun = "Gun",
+                    Devil = "Demon Fruit"
+                }
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", statMap[_G.ReiHub.StatType], 1)
+            end)
+        end
+    end
+end)
+
+-- ========================================
+-- AUTO BRING MOBS
+-- ========================================
+local BringPart = Instance.new("Part", Workspace)
+BringPart.Name = "ReiHub_Bring"
+BringPart.Size = Vector3.new(1, 1, 1)
+BringPart.Anchored = true
+BringPart.CanCollide = false
+BringPart.Transparency = 1
+
+local function BringEnemy(targetPos)
+    if not _G.ReiHub.AutoFarm then return end
+    local hrp = GetHRP()
+    if not hrp then return end
     
-    local keysystem = Instance.new("ScreenGui")
-    local Main1 = Instance.new("Frame")
-    local maincorner = Instance.new("UICorner")
-    local DISCORD = Instance.new("TextButton")
-    local CORNERDISCORD = Instance.new("UICorner")
-    local NAME = Instance.new("TextLabel")
-    local HUB = Instance.new("TextLabel")
-    local SUBMIT = Instance.new("TextButton")
-    local WindowStroke = Instance.new("UIStroke")
-    local WindowStrokeshit2 = Instance.new("UIStroke")
-    local WindowStrokeshit3 = Instance.new("UIStroke")
-    local WindowStrokeshit4 = Instance.new("UIStroke")
+    for _, mob in pairs(Workspace.Enemies:GetChildren()) do
+        local hum = mob:FindFirstChild("Humanoid")
+        local root = mob:FindFirstChild("HumanoidRootPart")
+        if hum and root and hum.Health > 0 then
+            local dist = (root.Position - targetPos).Magnitude
+            if dist <= _G.ReiHub.BringRange then
+                local tween = TweenService:Create(root, TweenInfo.new(0.35), {CFrame = CFrame.new(targetPos)})
+                tween:Play()
+            end
+        end
+    end
+end
 
-    keysystem.Name = "keysystem"
-    keysystem.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    keysystem.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- ========================================
+-- FUNÇÃO DE ATAQUE PRINCIPAL
+-- ========================================
+local function KillMob(mob)
+    if not mob or not IsAlive(mob) then return end
+    local root = mob:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    
+    -- Trava posição
+    if not mob:GetAttribute("Locked") then
+        mob:SetAttribute("Locked", root.CFrame)
+    end
+    
+    -- Bring
+    BringEnemy((mob:GetAttribute("Locked")).Position)
+    
+    -- Equipa arma
+    EquipWeapon(_G.ReiHub.SelectWeapon)
+    
+    -- Teleporta acima do mob
+    TP(root.CFrame * CFrame.new(0, _G.ReiHub.MobHeight, 0))
+    
+    -- Ataca
+    local tool = Player.Character and Player.Character:FindFirstChildOfClass("Tool")
+    if tool then
+        VirtualUser:CaptureController()
+        VirtualUser:Button1Down(Vector2.new(1280, 672))
+        task.wait(0.1)
+        VirtualUser:Button1Up(Vector2.new(1280, 672))
+    end
+end
 
-    Main1.Name = "Main1"
-    Main1.Parent = keysystem
-    Main1.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    Main1.Position = UDim2.new(0.317497045, 0, 0.144578308, 0)
-    Main1.Size = UDim2.new(0, 190, 0, 200)
-    Main1.Active = true
-    Main1.Visible = false
-    Main1.Draggable = true
+-- ========================================
+-- LEVEL FARM (AUTO QUEST)
+-- ========================================
+local Quests = {
+    -- World 1
+    ["Bandit"] = { Quest = "BanditQuest1", Level = 1, Qty = 1, Pos = CFrame.new(1045.96, 27.00, 1560.82), MobPos = CFrame.new(1120, 27, 1590) },
+    ["Monkey"] = { Quest = "JungleQuest", Level = 10, Qty = 1, Pos = CFrame.new(-1598.08, 35.55, 153.37), MobPos = CFrame.new(-1448.51, 67.85, 11.46) },
+    ["Gorilla"] = { Quest = "JungleQuest", Level = 15, Qty = 2, Pos = CFrame.new(-1598.08, 35.55, 153.37), MobPos = CFrame.new(-1129.88, 40.46, -525.42) },
+    ["Pirate"] = { Quest = "BuggyQuest1", Level = 30, Qty = 1, Pos = CFrame.new(-1141.07, 4.10, 3831.54), MobPos = CFrame.new(-1103.51, 13.75, 3896.09) },
+    ["Brute"] = { Quest = "BuggyQuest1", Level = 40, Qty = 2, Pos = CFrame.new(-1141.07, 4.10, 3831.54), MobPos = CFrame.new(-1140.08, 14.80, 4322.92) },
+    ["Desert Bandit"] = { Quest = "DesertQuest", Level = 60, Qty = 1, Pos = CFrame.new(894.48, 5.14, 4392.43), MobPos = CFrame.new(924.79, 6.44, 4481.58) },
+    ["Desert Officer"] = { Quest = "DesertQuest", Level = 75, Qty = 2, Pos = CFrame.new(894.48, 5.14, 4392.43), MobPos = CFrame.new(1608.28, 8.61, 4371.00) },
+    ["Snow Bandit"] = { Quest = "SnowQuest", Level = 90, Qty = 1, Pos = CFrame.new(1389.74, 88.15, -1298.90), MobPos = CFrame.new(1354.34, 87.27, -1393.94) },
+    ["Snowman"] = { Quest = "SnowQuest", Level = 100, Qty = 2, Pos = CFrame.new(1389.74, 88.15, -1298.90), MobPos = CFrame.new(1201.64, 144.57, -1550.06) },
+    ["Chief Petty Officer"] = { Quest = "MarineQuest2", Level = 120, Qty = 1, Pos = CFrame.new(-5039.58, 27.35, 4324.68), MobPos = CFrame.new(-4881.23, 22.65, 4273.75) },
+    ["Sky Bandit"] = { Quest = "SkyQuest", Level = 150, Qty = 1, Pos = CFrame.new(-4839.53, 716.36, -2619.44), MobPos = CFrame.new(-4953.20, 295.74, -2899.22) },
+    ["Dark Master"] = { Quest = "SkyQuest", Level = 175, Qty = 2, Pos = CFrame.new(-4839.53, 716.36, -2619.44), MobPos = CFrame.new(-5259.84, 391.39, -2229.03) },
+    ["Prisoner"] = { Quest = "PrisonerQuest", Level = 190, Qty = 1, Pos = CFrame.new(5308.93, 1.65, 475.12), MobPos = CFrame.new(5098.97, -0.32, 474.23) },
+    ["Dangerous Prisoner"] = { Quest = "PrisonerQuest", Level = 210, Qty = 2, Pos = CFrame.new(5308.93, 1.65, 475.12), MobPos = CFrame.new(5654.56, 15.63, 866.29) },
+    ["Toga Warrior"] = { Quest = "ColosseumQuest", Level = 250, Qty = 1, Pos = CFrame.new(-1580.04, 6.35, -2986.47), MobPos = CFrame.new(-1820.21, 51.68, -2740.66) },
+    ["Gladiator"] = { Quest = "ColosseumQuest", Level = 275, Qty = 2, Pos = CFrame.new(-1580.04, 6.35, -2986.47), MobPos = CFrame.new(-1292.83, 56.38, -3339.03) },
+    ["Military Soldier"] = { Quest = "MagmaQuest", Level = 300, Qty = 1, Pos = CFrame.new(-5313.37, 10.95, 8515.29), MobPos = CFrame.new(-5411.16, 11.08, 8454.29) },
+    ["Military Spy"] = { Quest = "MagmaQuest", Level = 325, Qty = 2, Pos = CFrame.new(-5313.37, 10.95, 8515.29), MobPos = CFrame.new(-5802.86, 86.26, 8828.85) },
+    ["Fishman Warrior"] = { Quest = "FishmanQuest", Level = 375, Qty = 1, Pos = CFrame.new(61122.65, 18.49, 1569.39), MobPos = CFrame.new(60878.30, 18.48, 1543.75) },
+    ["Fishman Commando"] = { Quest = "FishmanQuest", Level = 400, Qty = 2, Pos = CFrame.new(61122.65, 18.49, 1569.39), MobPos = CFrame.new(61922.63, 18.48, 1493.93) },
+    ["God's Guard"] = { Quest = "SkyExp1Quest", Level = 450, Qty = 1, Pos = CFrame.new(-4721.88, 843.87, -1949.96), MobPos = CFrame.new(-4710.04, 845.27, -1927.30) },
+    ["Shanda"] = { Quest = "SkyExp1Quest", Level = 475, Qty = 2, Pos = CFrame.new(-7859.09, 5544.19, -381.47), MobPos = CFrame.new(-7678.48, 5566.40, -497.21) },
+    ["Royal Squad"] = { Quest = "SkyExp2Quest", Level = 525, Qty = 1, Pos = CFrame.new(-7906.81, 5634.66, -1411.99), MobPos = CFrame.new(-7624.25, 5658.13, -1467.35) },
+    ["Royal Soldier"] = { Quest = "SkyExp2Quest", Level = 550, Qty = 2, Pos = CFrame.new(-7906.81, 5634.66, -1411.99), MobPos = CFrame.new(-7836.75, 5645.66, -1790.62) },
+    ["Galley Pirate"] = { Quest = "FountainQuest", Level = 625, Qty = 1, Pos = CFrame.new(5259.81, 37.35, 4050.02), MobPos = CFrame.new(5551.02, 78.90, 3930.41) },
+    ["Galley Captain"] = { Quest = "FountainQuest", Level = 650, Qty = 2, Pos = CFrame.new(5259.81, 37.35, 4050.02), MobPos = CFrame.new(5441.95, 42.50, 4950.09) },
+}
 
-    WindowStroke.Name = "WindowStroke"
-    WindowStroke.Parent = Main1
-    WindowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    WindowStroke.Color = Color3.fromRGB(0, 255, 0)
-    WindowStroke.LineJoinMode = Enum.LineJoinMode.Round
-    WindowStroke.Thickness = 2
-    WindowStroke.Transparency = 0
-    WindowStroke.Enabled = true
-    WindowStroke.Archivable = true
+local function GetQuestByLevel()
+    local level = Player.Data.Level.Value
+    local lastQuest = nil
+    for _, quest in pairs(Quests) do
+        if level >= quest.Level then
+            lastQuest = quest
+        end
+    end
+    return lastQuest
+end
 
-    WindowStrokeshit2.Name = "WindowStroke"
-    WindowStrokeshit2.Parent = DISCORD
-    WindowStrokeshit2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    WindowStrokeshit2.Color = Color3.fromRGB(0, 255, 0)
-    WindowStrokeshit2.LineJoinMode = Enum.LineJoinMode.Round
-    WindowStrokeshit2.Thickness = 1
-    WindowStrokeshit2.Transparency = 0
-    WindowStrokeshit2.Archivable = false
-    WindowStrokeshit2.Enabled = true
+local CurrentMob = nil
 
-    WindowStrokeshit3.Name = "WindowStroke"
-    WindowStrokeshit3.Parent = getkey
-    WindowStrokeshit3.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    WindowStrokeshit3.Color = Color3.fromRGB(0, 255, 0)
-    WindowStrokeshit3.LineJoinMode = Enum.LineJoinMode.Round
-    WindowStrokeshit3.Thickness = 1
-    WindowStrokeshit3.Transparency = 0
-    WindowStrokeshit3.Archivable = false
-    WindowStrokeshit3.Enabled = true
+task.spawn(function()
+    while task.wait(0.3) do
+        if not _G.ReiHub.AutoFarm or _G.ReiHub.FarmMode ~= "Level" then
+            task.wait(1)
+            continue
+        end
+        
+        pcall(function()
+            local hrp = GetHRP()
+            if not hrp then return end
+            
+            local questData = GetQuestByLevel()
+            if not questData then return end
+            
+            local questUI = Player.PlayerGui.Main.Quest
+            local hasQuest = questUI and questUI.Visible
+            
+            -- Pega quest se não tiver
+            if not hasQuest then
+                TP(questData.Pos)
+                if (hrp.Position - questData.Pos.Position).Magnitude <= 30 then
+                    task.wait(1)
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", questData.Quest, questData.Qty)
+                end
+                return
+            end
+            
+            -- Procura mob
+            local closestMob = nil
+            local closestDist = math.huge
+            
+            for _, mob in pairs(Workspace.Enemies:GetChildren()) do
+                if IsAlive(mob) and mob.Name == questData.Name then
+                    local root = mob:FindFirstChild("HumanoidRootPart")
+                    if root then
+                        local dist = (hrp.Position - root.Position).Magnitude
+                        if dist < closestDist then
+                            closestDist = dist
+                            closestMob = mob
+                        end
+                    end
+                end
+            end
+            
+            if closestMob then
+                KillMob(closestMob)
+            else
+                TP(questData.MobPos)
+            end
+        end)
+    end
+end)
 
-    WindowStrokeshit4.Name = "WindowStroke"
-    WindowStrokeshit4.Parent = SUBMIT
-    WindowStrokeshit4.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    WindowStrokeshit4.Color = Color3.fromRGB(0, 255, 0)
-    WindowStrokeshit4.LineJoinMode = Enum.LineJoinMode.Round
-    WindowStrokeshit4.Thickness = 1
-    WindowStrokeshit4.Transparency = 0
-    WindowStrokeshit4.Archivable = false
-    WindowStrokeshit4.Enabled = true
+-- ========================================
+-- AUTO BOSS
+-- ========================================
+local Bosses = {
+    -- World 1
+    ["The Gorilla King"] = { Quest = "JungleQuest", Qty = 3, Pos = CFrame.new(-1088.75, 8.13, -488.55), QuestPos = CFrame.new(-1601.65, 36.85, 153.38) },
+    ["Bobby"] = { Quest = "BuggyQuest1", Qty = 3, Pos = CFrame.new(-1087.37, 46.94, 4040.14), QuestPos = CFrame.new(-1140.17, 4.75, 3827.40) },
+    ["The Saw"] = { Pos = CFrame.new(-784.89, 72.42, 1603.58) },
+    ["Yeti"] = { Quest = "SnowQuest", Qty = 3, Pos = CFrame.new(1218.79, 138.01, -1488.02), QuestPos = CFrame.new(1386.80, 87.27, -1298.35) },
+    ["Vice Admiral"] = { Quest = "MarineQuest2", Qty = 2, Pos = CFrame.new(-5006.54, 88.03, 4353.16), QuestPos = CFrame.new(-5036.24, 28.67, 4324.56) },
+    ["Saber Expert"] = { Pos = CFrame.new(-1458.89, 29.88, -50.63) },
+    ["Magma Admiral"] = { Quest = "MagmaQuest", Qty = 3, Pos = CFrame.new(-5765.89, 82.92, 8718.30), QuestPos = CFrame.new(-5314.62, 12.26, 8517.27) },
+    ["Fishman Lord"] = { Quest = "FishmanQuest", Qty = 3, Pos = CFrame.new(61260.15, 30.95, 1193.43), QuestPos = CFrame.new(61122.65, 18.49, 1569.39) },
+    ["Wysper"] = { Quest = "SkyExp1Quest", Qty = 3, Pos = CFrame.new(-7866.13, 5576.43, -546.74), QuestPos = CFrame.new(-7861.94, 5545.51, -379.85) },
+    ["Thunder God"] = { Quest = "SkyExp2Quest", Qty = 3, Pos = CFrame.new(-7994.98, 5761.02, -2088.64), QuestPos = CFrame.new(-7903.38, 5635.98, -1410.92) },
+    ["Cyborg"] = { Quest = "FountainQuest", Qty = 3, Pos = CFrame.new(6094.02, 73.77, 3825.73), QuestPos = CFrame.new(5258.27, 38.52, 4050.04) },
+}
 
-    maincorner.Name = "maincorner"
-    maincorner.Parent = Main1
+task.spawn(function()
+    while task.wait(0.5) do
+        if not _G.ReiHub.AutoBoss or not _G.ReiHub.SelectBoss then
+            task.wait(1)
+            continue
+        end
+        
+        pcall(function()
+            local hrp = GetHRP()
+            if not hrp then return end
+            
+            local bossData = Bosses[_G.ReiHub.SelectBoss]
+            if not bossData then return end
+            
+            local boss = Workspace.Enemies:FindFirstChild(_G.ReiHub.SelectBoss) or Workspace:FindFirstChild(_G.ReiHub.SelectBoss)
+            
+            -- Se tem boss vivo, mata
+            if boss and IsAlive(boss) then
+                local root = boss:FindFirstChild("HumanoidRootPart")
+                if root then
+                    TP(root.CFrame * CFrame.new(0, 22, 0))
+                    KillMob(boss)
+                end
+                return
+            end
+            
+            -- Se precisa de quest
+            if bossData.Quest and _G.ReiHub.AutoAcceptQuest then
+                local hasQuest = Player.PlayerGui.Main.Quest and Player.PlayerGui.Main.Quest.Visible
+                if not hasQuest then
+                    TP(bossData.QuestPos)
+                    if (hrp.Position - bossData.QuestPos.Position).Magnitude <= 30 then
+                        task.wait(1)
+                        ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", bossData.Quest, bossData.Qty)
+                    end
+                    return
+                end
+            end
+            
+            -- Vai pra posição do boss
+            TP(bossData.Pos)
+        end)
+    end
+end)
 
-    CORNERDISCORD.Name = "CORNER DISCORD"
-    CORNERDISCORD.Parent = DISCORD
+-- ========================================
+-- AUTO COLLECT CHEST
+-- ========================================
+task.spawn(function()
+    while task.wait(0.5) do
+        if not _G.ReiHub.AutoCollectChest then
+            task.wait(1)
+            continue
+        end
+        
+        pcall(function()
+            local hrp = GetHRP()
+            if not hrp then return end
+            
+            local collection = game:GetService("CollectionService")
+            local chests = collection:GetTagged("_ChestTagged")
+            
+            local closest = nil
+            local closestDist = math.huge
+            
+            for _, chest in pairs(chests) do
+                if not chest:GetAttribute("IsDisabled") then
+                    local pos = chest:GetPivot().Position
+                    local dist = (hrp.Position - pos).Magnitude
+                    if dist < closestDist then
+                        closestDist = dist
+                        closest = chest
+                    end
+                end
+            end
+            
+            if closest then
+                TP(closest:GetPivot())
+            end
+        end)
+    end
+end)
 
-    NAME.Name = "NAME"
-    NAME.Parent = Main1
-    NAME.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    NAME.BackgroundTransparency = 1
-    NAME.Position = UDim2.new(0.111489578, 0, 0.00442506745, 0)
-    NAME.Size = UDim2.new(0, 150, 0, 50)
-    NAME.Font = Enum.Font.FredokaOne
-    NAME.Text = "SELECT HUB"
-    NAME.TextColor3 = Color3.fromRGB(0, 255, 0)
-    NAME.TextSize = 14
+-- ========================================
+-- SPEED HACK
+-- ========================================
+task.spawn(function()
+    while task.wait(0.1) do
+        if _G.ReiHub.SpeedEnabled then
+            local char = Player.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hum and hum.WalkSpeed ~= _G.ReiHub.SpeedValue then
+                hum.WalkSpeed = _G.ReiHub.SpeedValue
+            end
+        end
+    end
+end)
 
-    HUB.Name = "HUB"
-    HUB.Parent = Main1
-    HUB.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    HUB.BackgroundTransparency = 1
-    HUB.Position = UDim2.new(0.198232114, 0, 0.00442507118, 0)
-    HUB.Size = UDim2.new(0, 191, 0, 50)
-    HUB.Font = Enum.Font.FredokaOne
-    HUB.Text = ""
-    HUB.TextColor3 = Color3.fromRGB(0, 255, 0)
-    HUB.TextSize = 16
-    HUB.TextWrapped = true
-
-    SUBMIT.Name = "SUBMIT"
-    SUBMIT.Parent = Main1
-    SUBMIT.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
-    SUBMIT.Position = UDim2.new(0.13418974, 0, 0.3360128, 0)
-    SUBMIT.Size = UDim2.new(0, 140, 0, 40)
-    SUBMIT.Font = Enum.Font.SourceSans
-    SUBMIT.Text = "GTVZ HUB"
-    SUBMIT.TextColor3 = Color3.fromRGB(0, 255, 0)
-    SUBMIT.TextSize = 14
-    SUBMIT.TextWrapped = true
-
-    SUBMIT.MouseButton1Click:Connect(function()
-        Main1.Visible = false
-        wait(1)
-        Main1:Destroy()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Fiend1sh/FiendMain/refs/heads/main/ZynHub", true))()
-    end)
-
-    -- Main Key System GUI
-    local keysystem2 = Instance.new("ScreenGui")
-    local Main = Instance.new("Frame")
-    local maincorner2 = Instance.new("UICorner")
-    local LOGO = Instance.new("ImageLabel")
-    local Frame = Instance.new("Frame")
-    local KEYHERE = Instance.new("TextBox")
-    local CORNERKEY = Instance.new("UICorner")
-    local GETKEY = Instance.new("TextButton")
-    local CORNERGET = Instance.new("UICorner")
-    local SUBMIT2 = Instance.new("TextButton")
-    local UICorner = Instance.new("UICorner")
-    local DISCORD2 = Instance.new("TextButton")
-    local CORNERDISCORD2 = Instance.new("UICorner")
-    local NAME2 = Instance.new("TextLabel")
-    local HUB2 = Instance.new("TextLabel")
-    local WindowStroke2 = Instance.new("UIStroke")
-    local WindowStrokeshit = Instance.new("UIStroke")
-
-    keysystem2.Name = "keysystem"
-    keysystem2.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    keysystem2.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-    Main.Name = "Main"
-    Main.Parent = keysystem2
-    Main.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    Main.Position = UDim2.new(0.5, -200, 0.5, -125)
-    Main.Size = UDim2.new(0, 404, 0, 206)
-    Main.Active = true
-    Main.Draggable = true
-
-    WindowStroke2.Name = "WindowStroke"
-    WindowStroke2.Parent = Main
-    WindowStroke2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    WindowStroke2.Color = Color3.fromRGB(0, 255, 0)
-    WindowStroke2.LineJoinMode = Enum.LineJoinMode.Round
-    WindowStroke2.Thickness = 1
-    WindowStroke2.Transparency = 0
-    WindowStroke2.Enabled = true
-    WindowStroke2.Archivable = true
-
-    WindowStrokeshit.Name = "WindowStroke"
-    WindowStrokeshit.Parent = KEYHERE
-    WindowStrokeshit.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    WindowStrokeshit.Color = Color3.fromRGB(0, 255, 0)
-    WindowStrokeshit.LineJoinMode = Enum.LineJoinMode.Round
-    WindowStrokeshit.Thickness = 1
-    WindowStrokeshit.Transparency = 0
-    WindowStrokeshit.Archivable = false
-    WindowStrokeshit.Enabled = true
-
-    maincorner2.Name = "maincorner"
-    maincorner2.Parent = Main
-
-    LOGO.Name = "LOGO"
-    LOGO.Parent = Main
-    LOGO.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    LOGO.BackgroundTransparency = 1
-    LOGO.Position = UDim2.new(-0.0470297076, 0, 0.0708536655, 0)
-    LOGO.Size = UDim2.new(0, 216, 0, 199)
-    LOGO.Image = "rbxassetid://99131375937917"
-
-    Frame.Parent = Main
-    Frame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    Frame.BorderSizePixel = 0
-    Frame.Position = UDim2.new(0.0247524753, 0, 0.140776694, 0)
-    Frame.Size = UDim2.new(0, 384, 0, 2)
-
-    KEYHERE.Name = "KEY HERE"
-    KEYHERE.Parent = Main
-    KEYHERE.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
-    KEYHERE.Position = UDim2.new(0.445544571, 0, 0.233009696, 0)
-    KEYHERE.Size = UDim2.new(0, 200, 0, 50)
-    KEYHERE.Font = Enum.Font.Gotham
-    KEYHERE.PlaceholderText = "CHAVE🔑"
-    KEYHERE.Text = ""
-    KEYHERE.TextColor3 = Color3.fromRGB(0, 255, 0)
-    KEYHERE.TextSize = 14
-
-    CORNERKEY.Name = "CORNER KEY"
-    CORNERKEY.Parent = KEYHERE
-
-    GETKEY.Name = "GET KEY"
-    GETKEY.Parent = Main
-    GETKEY.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
-    GETKEY.Position = UDim2.new(0.425742567, 0, 0.572815537, 0)
-    GETKEY.Size = UDim2.new(0, 104, 0, 40)
-    GETKEY.Font = Enum.Font.FredokaOne
-    GETKEY.Text = "PEGA CHAVE"
-    GETKEY.TextColor3 = Color3.fromRGB(0, 255, 0)
-    GETKEY.TextSize = 14
-
-    GETKEY.MouseButton1Click:Connect(function()
-        setclipboard("https://link-target.net/1344304/gtvz-hub")
-        DiscordLib:Notification("CHAVE🔑", "\nLINK COPIADO\nVAI NO NAVEGADOR E COLA", 3)
-    end)
-
-    CORNERGET.Name = "CORNER GET"
-    CORNERGET.Parent = GETKEY
-
-    SUBMIT2.Name = "SUBMIT"
-    SUBMIT2.Parent = Main
-    SUBMIT2.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
-    SUBMIT2.Position = UDim2.new(0.710396051, 0, 0.572815537, 0)
-    SUBMIT2.Size = UDim2.new(0, 101, 0, 40)
-    SUBMIT2.Font = Enum.Font.FredokaOne
-    SUBMIT2.Text = "CHECAR CHAVE"
-    SUBMIT2.TextColor3 = Color3.fromRGB(0, 255, 0)
-    SUBMIT2.TextSize = 14
-
-    SUBMIT2.MouseButton1Click:Connect(function()
-        local inputKey = KEYHERE.Text
-        if IsKeyValid(inputKey) then
-            SaveKey(inputKey)
-            DiscordLib:Notification("Key System", "CHAVE VÁLIDA! SALVA COM SUCESSO!", 3)
-            wait(2)
-            DiscordLib:Notification("Key System", "CARREGANDO SCRIPT...", 3)
-            wait(1)
-            Main1.Visible = true
-            keysystem2:Destroy()
-        else
-            DiscordLib:Notification("CHAVE🔑", "\nCHAVE INVÁLIDA!", 5)
+-- ========================================
+-- NO CLIP
+-- ========================================
+task.spawn(function()
+    RunService.Stepped:Connect(function()
+        if _G.ReiHub.NoClip then
+            local char = Player.Character
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
         end
     end)
+end)
 
-    UICorner.Parent = SUBMIT2
+-- ========================================
+-- AUTO TEAM (MARINES)
+-- ========================================
+task.spawn(function()
+    task.wait(2)
+    if Player.Team and Player.Team.Name ~= "Marines" then
+        pcall(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
+        end)
+    end
+end)
 
-    DISCORD2.Name = "DISCORD"
-    DISCORD2.Parent = Main
-    DISCORD2.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
-    DISCORD2.Position = UDim2.new(0.487623751, 0, 0.805825293, 0)
-    DISCORD2.Size = UDim2.new(0, 166, 0, 31)
-    DISCORD2.Font = Enum.Font.FredokaOne
-    DISCORD2.Text = "DISCORD"
-    DISCORD2.TextColor3 = Color3.fromRGB(0, 255, 0)
-    DISCORD2.TextSize = 14
+-- ========================================
+-- FULL BRIGHT
+-- ========================================
+Lighting.Ambient = Color3.new(0.7, 0.7, 0.7)
+Lighting.Brightness = 2
+Lighting.FogEnd = 1e10
 
-    DISCORD2.MouseButton1Click:Connect(function()
-        setclipboard("https://discord.com/invite/Cg4fDkn6un")
-        DiscordLib:Notification("DISCORD", "LINK DISCORD COPIADO", 8)
-    end)
+-- ========================================
+-- UI - REI HUB
+-- ========================================
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jadelly/Ui/refs/heads/main/NewZynLib"))()
+local Window = Library:MakeWindow({
+    Title = "Rei Hub | Farm",
+    SubTitle = "Blox Fruits",
+    SaveFolder = true,
+})
 
-    CORNERDISCORD2.Name = "CORNER DISCORD"
-    CORNERDISCORD2.Parent = DISCORD2
+-- Tab Principal
+local MainTab = Window:MakeTab({ Title = "Main", Icon = "rbxassetid://10709769508" })
 
-    NAME2.Name = "NAME"
-    NAME2.Parent = Main
-    NAME2.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    NAME2.BackgroundTransparency = 1
-    NAME2.Position = UDim2.new(0.301980197, 0, -0.0533980615, 0)
-    NAME2.Size = UDim2.new(0, 191, 0, 50)
-    NAME2.Font = Enum.Font.FredokaOne
-    NAME2.Text = "GTVZ           KEY SYSTEM"
-    NAME2.TextColor3 = Color3.fromRGB(0, 255, 0)
-    NAME2.TextSize = 16
+MainTab:AddSection({"Auto Farm"})
 
-    HUB2.Name = "HUB"
-    HUB2.Parent = Main
-    HUB2.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    HUB2.BackgroundTransparency = 1
-    HUB2.Position = UDim2.new(0.227722734, 0, -0.0533980578, 0)
-    HUB2.Size = UDim2.new(0, 191, 0, 50)
-    HUB2.Font = Enum.Font.FredokaOne
-    HUB2.Text = "   HUB"
-    HUB2.TextColor3 = Color3.fromRGB(0, 255, 0)
-    HUB2.TextSize = 16
-    HUB2.TextWrapped = true
+MainTab:AddDropdown({
+    Name = "Select Weapon",
+    Options = {"Melee", "Sword", "Blox Fruit", "Gun"},
+    Default = _G.ReiHub.SelectWeapon,
+    Callback = function(v)
+        _G.ReiHub.SelectWeapon = v
+        SaveSettings()
+    end
+})
+
+MainTab:AddDropdown({
+    Name = "Farm Mode",
+    Options = {"Level", "Boss"},
+    Default = _G.ReiHub.FarmMode,
+    Callback = function(v)
+        _G.ReiHub.FarmMode = v
+        SaveSettings()
+    end
+})
+
+MainTab:AddToggle({
+    Name = "Start Auto Farm",
+    Default = _G.ReiHub.AutoFarm,
+    Callback = function(v)
+        _G.ReiHub.AutoFarm = v
+        SaveSettings()
+    end
+})
+
+MainTab:AddToggle({
+    Name = "Auto Accept Quests",
+    Default = _G.ReiHub.AutoAcceptQuest or false,
+    Callback = function(v)
+        _G.ReiHub.AutoAcceptQuest = v
+        SaveSettings()
+    end
+})
+
+MainTab:AddSection({"Auto Boss"})
+
+local BossList = {}
+for name in pairs(Bosses) do
+    table.insert(BossList, name)
 end
+
+MainTab:AddDropdown({
+    Name = "Select Boss",
+    Options = BossList,
+    Default = _G.ReiHub.SelectBoss or BossList[1],
+    Callback = function(v)
+        _G.ReiHub.SelectBoss = v
+        SaveSettings()
+    end
+})
+
+MainTab:AddToggle({
+    Name = "Start Auto Boss",
+    Default = _G.ReiHub.AutoBoss,
+    Callback = function(v)
+        _G.ReiHub.AutoBoss = v
+        SaveSettings()
+    end
+})
+
+MainTab:AddSection({"Auto Stats"})
+
+MainTab:AddDropdown({
+    Name = "Stat Type",
+    Options = {"Melee", "Defense", "Sword", "Gun", "Devil"},
+    Default = _G.ReiHub.StatType,
+    Callback = function(v)
+        _G.ReiHub.StatType = v
+        SaveSettings()
+    end
+})
+
+MainTab:AddToggle({
+    Name = "Auto Stats",
+    Default = _G.ReiHub.AutoStats,
+    Callback = function(v)
+        _G.ReiHub.AutoStats = v
+        SaveSettings()
+    end
+})
+
+-- Tab Settings
+local SettingsTab = Window:MakeTab({ Title = "Settings", Icon = "rbxassetid://10734950309" })
+
+SettingsTab:AddSection({"Haki / Abilities"})
+
+SettingsTab:AddToggle({
+    Name = "Auto Ken (Observation)",
+    Default = _G.ReiHub.AutoKen,
+    Callback = function(v)
+        _G.ReiHub.AutoKen = v
+        SaveSettings()
+    end
+})
+
+SettingsTab:AddToggle({
+    Name = "Auto Haki (Buso)",
+    Default = _G.ReiHub.AutoHaki,
+    Callback = function(v)
+        _G.ReiHub.AutoHaki = v
+        SaveSettings()
+    end
+})
+
+SettingsTab:AddSection({"Movement"})
+
+SettingsTab:AddToggle({
+    Name = "Speed Hack",
+    Default = _G.ReiHub.SpeedEnabled,
+    Callback = function(v)
+        _G.ReiHub.SpeedEnabled = v
+        SaveSettings()
+    end
+})
+
+SettingsTab:AddTextBox({
+    Name = "Speed Value",
+    Placeholder = "50",
+    Default = tostring(_G.ReiHub.SpeedValue),
+    Callback = function(v)
+        local num = tonumber(v)
+        if num then
+            _G.ReiHub.SpeedValue = num
+            SaveSettings()
+        end
+    end
+})
+
+SettingsTab:AddToggle({
+    Name = "No Clip",
+    Default = _G.ReiHub.NoClip,
+    Callback = function(v)
+        _G.ReiHub.NoClip = v
+        SaveSettings()
+    end
+})
+
+SettingsTab:AddSection({"Auto Collect"})
+
+SettingsTab:AddToggle({
+    Name = "Auto Collect Chest",
+    Default = _G.ReiHub.AutoCollectChest,
+    Callback = function(v)
+        _G.ReiHub.AutoCollectChest = v
+        SaveSettings()
+    end
+})
+
+SettingsTab:AddSection({"Bring Settings"})
+
+SettingsTab:AddTextBox({
+    Name = "Bring Range",
+    Placeholder = "235",
+    Default = tostring(_G.ReiHub.BringRange),
+    Callback = function(v)
+        local num = tonumber(v)
+        if num then _G.ReiHub.BringRange = num end
+        SaveSettings()
+    end
+})
+
+SettingsTab:AddTextBox({
+    Name = "Mob Height",
+    Placeholder = "20",
+    Default = tostring(_G.ReiHub.MobHeight),
+    Callback = function(v)
+        local num = tonumber(v)
+        if num then _G.ReiHub.MobHeight = num end
+        SaveSettings()
+    end
+})
+
+-- Tab Teleports
+local TeleportTab = Window:MakeTab({ Title = "Teleports", Icon = "rbxassetid://10734906975" })
+
+TeleportTab:AddSection({"Worlds"})
+
+TeleportTab:AddButton({
+    Name = "Teleport to Sea 1",
+    Callback = function()
+        pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelMain") end)
+    end
+})
+
+TeleportTab:AddButton({
+    Name = "Teleport to Sea 2",
+    Callback = function()
+        pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelDressrosa") end)
+    end
+})
+
+TeleportTab:AddButton({
+    Name = "Teleport to Sea 3",
+    Callback = function()
+        pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelZou") end)
+    end
+})
+
+TeleportTab:AddSection({"Islands"})
+
+TeleportTab:AddButton({
+    Name = "TP to Hydra",
+    Callback = function()
+        pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(5643.45, 1013.08, -340.51)) end)
+        TP(CFrame.new(5206.40, 1004.10, 748.35))
+    end
+})
+
+TeleportTab:AddButton({
+    Name = "TP to Cake Island",
+    Callback = function()
+        TP(CFrame.new(-2091.91, 70.00, -12142.83))
+    end
+})
+
+TeleportTab:AddButton({
+    Name = "TP to Haunted Castle",
+    Callback = function()
+        TP(CFrame.new(-9516.99, 172.01, 6078.46))
+    end
+})
+
+-- Tab Server
+local ServerTab = Window:MakeTab({ Title = "Server", Icon = "rbxassetid://7040410130" })
+
+ServerTab:AddButton({
+    Name = "Hop Server",
+    Callback = function()
+        pcall(function()
+            for i = math.random(1, 75), 100 do
+                local servers = ReplicatedStorage.__ServerBrowser:InvokeServer(i)
+                for id, data in pairs(servers) do
+                    if tonumber(data.Count) < 12 then
+                        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, id)
+                        return
+                    end
+                end
+            end
+        end)
+    end
+})
+
+ServerTab:AddButton({
+    Name = "Rejoin Server",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId, Player)
+    end
+})
+
+ServerTab:AddButton({
+    Name = "Copy Job ID",
+    Callback = function()
+        setclipboard(game.JobId)
+    end
+})
+
+print("✅ Rei Hub carregado com sucesso!")
