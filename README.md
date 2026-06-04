@@ -1,8 +1,4 @@
--- =============================================
--- 🌿 REI HUB V3 | BLOX FRUITS
--- OTIMIZADO PARA DELTA EXECUTOR
--- INTERFACE: RAYFIELD (100% COMPATÍVEL)
--- =============================================
+
 
 -- =============================================
 -- CARREGAR RAYFIELD (MELHOR UI)
